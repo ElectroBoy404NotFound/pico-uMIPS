@@ -10,7 +10,7 @@ struct Cpu;
 
 #include <stdbool.h>
 #include <stdint.h>
-#include "hypercall.h"
+#include "../hypercall/hypercall.h"
 
 
 

@@ -11,7 +11,7 @@
 #define EMU_ROM_BASE	0x1FC00000UL	/* as per spec */
 
 #include <stdbool.h>
-#include "cpu.h"
+#include "../cpu/cpu.h"
 
 
 #define MASS_STORE_OP_GET_SZ	0	//in blocks

@@ -5,9 +5,9 @@
 
 #include <stdint.h>
 #include "ds1287.h"
-#include "mem.h"
-#include "soc.h"
-#include "cpu.h"
+#include "../memory/mem.h"
+#include "../soc/soc.h"
+#include "../cpu/cpu.h"
 
 //https://pdfserv.maximintegrated.com/en/ds/DS12885-DS12C887A.pdf
 

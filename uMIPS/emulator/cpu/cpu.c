@@ -6,8 +6,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../config/umips_config.h"
-#include "../console/console.h"
+#include "../../config/umips_config.h"
+#include "../../console/console.h"
 
 //#define R4000
 #define SUPPORT_LIKELY_BRANCHES	//sert to enable BxxL even on non-R4000
@@ -22,9 +22,9 @@
 #define SUPPORT_LL_SC
 
 
-#include "cpu.h"
-#include "mem.h"
-#include "decBus.h"
+#include "../cpu/cpu.h"
+#include "../memory/mem.h"
+#include "../bus/decBus.h"
 
 #define EMU_NUM_TLB_ENTRIES			64
 #define EMU_NUM_WIRED_TLB_ENTRIES	8

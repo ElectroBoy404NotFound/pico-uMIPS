@@ -5,7 +5,7 @@
 
 #include <stdio.h>
 #include "mem.h"
-#include "../console/console.h"
+#include "../../console/console.h"
 
 typedef struct {
 

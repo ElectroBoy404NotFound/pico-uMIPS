@@ -4,15 +4,15 @@
 */
 
 #include <string.h>
-#include "hypercall.h"
-#include "decBus.h"
-#include "ds1287.h"
-#include "dz11.h"
+#include "../hypercall/hypercall.h"
+#include "../bus/decBus.h"
+#include "../rtc/ds1287.h"
+#include "../dz11/dz11.h"
 #include "soc.h"
-#include "mem.h"
-#include "../sd/sd.h"
-#include "../psram/psram.h"
-#include "../console/console.h"
+#include "../memory/mem.h"
+#include "../../sd/sd.h"
+#include "../../psram/psram.h"
+#include "../../console/console.h"
 
 static uint32_t mRamTop;
 
@@ -225,6 +225,8 @@ void startEmu(void)
 {
 	uint32_t ramAmt = EMULATOR_RAM_MB * 1024 * 1024;
 	
+	console_printf("\33[m");
+
     if (!memRegionAdd(EMU_RAM_BASE, ramAmt, accessRam))
         console_panic("failed to init %s\n", "RAM");
     if (!memRegionAdd(EMU_ROM_BASE & 0x1FFFFFFFUL, sizeof(gRom), accessRom))
@@ -254,7 +256,7 @@ void startEmu(void)
 		// 	ds1287step((getTimeMilliseconds() - lastMilli));
 		// 	lastMilli = getTimeMilliseconds();
 		// }
-		if(!(cy & 0xff)) ds1287step(1);
+		if(!(cy & 0xfff)) ds1287step(1);
     }
 
     console_printf("CPU exited!");

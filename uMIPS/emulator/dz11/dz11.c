@@ -10,11 +10,11 @@
 #include <string.h>
 #include <stdio.h>
 #include "dz11.h"
-#include "mem.h"
-#include "soc.h"
-#include "cpu.h"
+#include "../memory/mem.h"
+#include "../soc/soc.h"
+#include "../cpu/cpu.h"
 
-#include "../console/console.h"
+#include "../../console/console.h"
 
 #define DZ11_REG_CSR			0
 #define DZ11_REG_LPR_RBUF		1	//RBUF is RO, LPR is WO

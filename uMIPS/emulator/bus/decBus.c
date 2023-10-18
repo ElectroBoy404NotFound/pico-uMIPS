@@ -4,9 +4,9 @@
 */
 
 #include <stdio.h>
-#include "../console/console.h"
+#include "../../console/console.h"
 #include "decBus.h"
-#include "mem.h"
+#include "../memory/mem.h"
 
 
 #pragma GCC optimize ("Os")
