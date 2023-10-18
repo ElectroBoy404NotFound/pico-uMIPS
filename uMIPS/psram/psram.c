@@ -1,10 +1,10 @@
+#pragma GCC optimize ("O2")
+
 #include <stdlib.h>
 
 #include "../config/umips_config.h"
 #include "psram.h"
 #include "../cache/cache.h"
-
-uint64_t reads, writes;
 
 #if PSRAM_HARDWARE_SPI
 #include "hardware/spi.h"
@@ -27,7 +27,6 @@ uint64_t reads, writes;
 
 #define spi_pulse_sck()                \
     {                                  \
-        asm("nop");                    \
         gpio_put(PSRAM_SPI_PIN_CK, 1); \
         asm("nop");                    \
         gpio_put(PSRAM_SPI_PIN_CK, 0); \
@@ -37,10 +36,9 @@ void spi_tx_array(const uint8_t *data, size_t size)
 {
     for (size_t i = 0; i < size; i++)
     {
-        uint8_t byte = data[i];
         for (int j = 7; j >= 0; j--)
         {
-            spi_set_mosi((byte >> j) & 0x01);
+            spi_set_mosi((data[i] >> j) & 0x01);
             spi_pulse_sck();
         }
     }
@@ -186,7 +184,6 @@ int initPSRAM()
 #endif
 #endif
 
-    reads = writes = 0;
 #if PSRAM_HARDWARE_SPI
     baud = spi_set_baudrate(PSRAM_SPI_INST, 1000 * 1000 * PSRAM_SPI_SPEED);
     return baud;
@@ -197,11 +194,11 @@ int initPSRAM()
 
 uint8_t cmdAddr[5];
 
-void accessPSRAM(uint32_t addr, size_t size, bool write, void *bufP) {
+void __accessPSRAM(uint32_t addr, size_t size, bool write, void *bufP) {
     if(write) cache_write(addr, bufP, size);
     else cache_read(addr, bufP, size);
 }
-void __accessPSRAM(uint32_t addr, size_t size, bool write, void *bufP)
+void accessPSRAM(uint32_t addr, size_t size, bool write, void *bufP)
 {
     uint8_t *b = (uint8_t *)bufP;
     uint cmdSize = 4;
@@ -241,18 +238,10 @@ void __accessPSRAM(uint32_t addr, size_t size, bool write, void *bufP)
     selectPsramChip(ramchip);
     PSRAM_SPI_WRITE(cmdAddr, cmdSize);
 
-    if (write) {
-        writes++;
+    if (write)
         PSRAM_SPI_WRITE(b, size);
-    }
-    else {
-        reads++;
+    else
         PSRAM_SPI_READ(b, size);
-    }
-    deSelectPsramChip(ramchip);
-}
 
-void RAMGetStat(uint64_t* preads, uint64_t* pwrites) {
-    *(preads) = reads;
-    *(pwrites) = writes;
+    deSelectPsramChip(ramchip);
 }

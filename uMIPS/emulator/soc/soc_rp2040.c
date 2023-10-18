@@ -3,6 +3,8 @@
 	Non-commercial use only OR licensing@dmitry.gr
 */
 
+#pragma GCC optimize ("Ofast")
+
 #include <string.h>
 #include "../hypercall/hypercall.h"
 #include "../bus/decBus.h"
@@ -103,8 +105,8 @@ static bool massStorageAccess(uint8_t op, uint32_t sector, void *buf)
 {
     switch (op) {
         case MASS_STORE_OP_GET_SZ:
-            // *(uint32_t*)buf = sdGetNumSecs();
-			// console_panic("SECTOR_NUM_UNIMPL");
+            *(uint32_t*)buf = 16777216;
+			console_printf("\33[33mNumber of sectors requested. Assuming each sector is 512 bytes and file can go to 8GB.\33[m\n");
             return true;
         
         case MASS_STORE_OP_READ:
@@ -137,10 +139,9 @@ static bool accessRom(uint32_t pa, uint8_t size, bool write, void* buf)
 	return true;
 }
 
-static bool accessRam(uint32_t pa, uint8_t size, bool write, void* buf)
+bool accessRam(uint32_t pa, uint8_t size, bool write, void* buf)
 {	
 	accessPSRAM(pa, size, write, buf);
-	
 	return true;
 }
 

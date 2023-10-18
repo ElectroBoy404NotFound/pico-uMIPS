@@ -1,3 +1,5 @@
+#pragma GCC optimize ("O2")
+
 #include "pico/stdlib.h"
 #include "pico/multicore.h"
 #include "pico/util/queue.h"

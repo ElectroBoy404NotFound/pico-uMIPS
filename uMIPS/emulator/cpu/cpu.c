@@ -3,22 +3,16 @@
 	Non-commercial use only OR licensing@dmitry.gr
 */
 
+#pragma GCC optimize ("Ofast")
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "../../config/umips_config.h"
 #include "../../console/console.h"
 
-//#define R4000
 #define SUPPORT_LIKELY_BRANCHES	//sert to enable BxxL even on non-R4000
-//#define SUPPORT_MOVCC			//set to enable MOVN/MOVZ. technically part of MIPS IV, but our busysbox seems to need them
 #define SUPPORT_TRAPCC			//set to eable Tcc/Tcci instrs  even for R3000
-//#define SUPPORT_MUL				//set to enable MUL. technically not even present in R4000, but....
-//#define SUPPORT_MAC				//set to enable MADD/MADDU/MSUB/MSUBU, even though lacking in R4000
-//#define SUPPORT_CLZ				//set to enable CLZ/CLO, even though lacking in R4000
-//#define SUPPORT_BITFIELD_OPS	//set to enable INS/EXT, even though lacking in R4000
-//#define SUPPORT_EXTEND_OPS		//set to enable SEH/SEB, even though lacking in R4000
-//#define SUPPORT_BYTESWAP		//set to enable WSBH, even though lacking in R4000
 #define SUPPORT_LL_SC
 
 
@@ -33,11 +27,7 @@
 #define TLB_HASH_ENTRIES		128
 #define TLB_HASH(x)				((((x) >> 24) ^ ((x) >> 12)) % (TLB_HASH_ENTRIES))
 
-#ifdef R4000
-	#define PRID_VALUE				0x0400	//R4000
-#else
-	#define PRID_VALUE				0x0220	//R3000
-#endif
+#define PRID_VALUE				0x0220	//R3000
 
 static struct {
 
@@ -103,41 +93,15 @@ static struct {
 #define TLB_ENTRYLO_FLAGS_MASK	0x00000ff0	//for flagsAsByte
 #define TLB_ENTRYLO_FLAGS_SHIFT	4
 
-#ifdef R4000
-	#define CP0_CTX_PTEBASE_MASK	0xff800000
-	#define CP0_CTX_PTEBASE_SHIFT	23
-	#define CP0_CTX_BADVPN2_MASK	0x007ffffc	//which bits go where ain't clear here...docs conflict
-	#define CP0_CTX_BADVPN2_SHIFT	2
-#else
-	#define CP0_CTX_PTEBASE_MASK	0xffe00000
-	#define CP0_CTX_PTEBASE_SHIFT	21
-	#define CP0_CTX_BADVPN2_MASK	0x001ffffc
-	#define CP0_CTX_BADVPN2_SHIFT	2
-#endif
+#define CP0_CTX_PTEBASE_MASK	0xffe00000
+#define CP0_CTX_PTEBASE_SHIFT	21
+#define CP0_CTX_BADVPN2_MASK	0x001ffffc
+#define CP0_CTX_BADVPN2_SHIFT	2
 
-
-
-
-
-#ifdef R4000
-
-	#define EXC_OFST_KU_TLB_REFILL		0x000
-	#define EXC_OFST_NON_KU_TLB_REFILL	0x000
-	#define EXC_OFST_EXL				0x180
-	#define EXC_OFST_GENERAL			0x180
-	#define EXC_OFST_IRQ				0x200
-	
-#else
-
-	#define EXC_OFST_KU_TLB_REFILL		0x000
-	#define EXC_OFST_NON_KU_TLB_REFILL	0x080
-	#define EXC_OFST_GENERAL			0x080
-	#define EXC_OFST_IRQ				0x080
-	
-#endif
-
-
-
+#define EXC_OFST_KU_TLB_REFILL		0x000
+#define EXC_OFST_NON_KU_TLB_REFILL	0x080
+#define EXC_OFST_GENERAL			0x080
+#define EXC_OFST_IRQ				0x080
 
 //MD00090-2B-MIPS32PRA-AFP-06.02.pdf page 189
 #define CP0_STATUS_CU(x)		(0x10000000 << (x))
@@ -155,17 +119,12 @@ static struct {
 #define CP0_STATUS_IM_MASK		0x0000ff00
 #define CP0_STATUS_IM_BITLEN	8
 #define CP0_STATUS_IM_SHIFT		8
-#ifdef R4000
-	#define CP0_STATUS_UM		0x00000020	//set for user mode
-	#define CP0_STATUS_ERL		0x00000004
-	#define CP0_STATUS_EXL		0x00000002
-#else
-	#define CP0_STATUS_KUO		0x00000020
-	#define CP0_STATUS_IEO		0x00000010
-	#define CP0_STATUS_KUP		0x00000008
-	#define CP0_STATUS_IEP		0x00000004
-	#define CP0_STATUS_KUC		0x00000002	//set when in userspace
-#endif
+
+#define CP0_STATUS_KUO		0x00000020
+#define CP0_STATUS_IEO		0x00000010
+#define CP0_STATUS_KUP		0x00000008
+#define CP0_STATUS_IEP		0x00000004
+#define CP0_STATUS_KUC		0x00000002	//set when in userspace
 #define CP0_STATUS_IE_SHIFT		0
 #define CP0_STATUS_IE			(1 << CP0_STATUS_IE_SHIFT)
 
@@ -330,11 +289,7 @@ void cpuIrq(uint8_t idx, bool raise)
 static void cpuPrvTakeException(uint8_t excCode)
 {
 	uint32_t vector = 0x80000000;
-#ifdef R4000
-	if (cpu.status & CP0_STATUS_EXL)
-		vector += EXC_OFST_EXL;
-	else 
-#endif
+
 	switch (excCode) {
 		case CP0_EXC_COD_IRQ:
 			vector += (cpu.cause & CP0_CAUSE_IV) ? EXC_OFST_IRQ : EXC_OFST_GENERAL;
@@ -356,22 +311,6 @@ static void cpuPrvTakeException(uint8_t excCode)
 			vector += EXC_OFST_GENERAL;
 			break;
 	}
-#ifdef R4000
-	if (!(cpu.status & CP0_STATUS_EXL)) {
-		if (cpu.inDelaySlot) {
-			
-			cpu.epc = cpu.pc - 4;
-			cpu.cause |= CP0_CAUSE_BD;
-		}
-		else {
-			
-			cpu.epc = cpu.pc;
-			cpu.cause &=~ CP0_CAUSE_BD;
-		}
-		cpu.status |= CP0_STATUS_EXL;
-	}
-#else
-
 	if (cpu.inDelaySlot) {
 		
 		cpu.epc = cpu.pc - 4;
@@ -385,8 +324,6 @@ static void cpuPrvTakeException(uint8_t excCode)
 	cpu.status =
 		(cpu.status &~ (CP0_STATUS_KUO | CP0_STATUS_IEO | CP0_STATUS_KUP | CP0_STATUS_IEP | CP0_STATUS_KUC | CP0_STATUS_IE)) |
 		((cpu.status & (CP0_STATUS_KUP | CP0_STATUS_IEP | CP0_STATUS_KUC | CP0_STATUS_IE)) << 2);
-
-#endif
 	
 	cpu.cause = (cpu.cause &~ CP0_CAUSE_EXC_COD_MASK) | ((((uint32_t)excCode) << CP0_CAUSE_EXC_COD_SHIFT) & CP0_CAUSE_EXC_COD_MASK);
 	
@@ -484,11 +421,7 @@ static inline void cpuPrvTakeCoprocUnusableExc(uint8_t cpNo)
 
 static inline void cpuPrvTakeFloatingPointExc(void)
 {
-	#ifdef R4000
-		cpuPrvTakeException(CP0_EXC_COD_FPE);
-	#else
-		cpuPrvTakeException(CP0_EXC_COD_RI);
-	#endif
+	cpuPrvTakeException(CP0_EXC_COD_RI);
 }
 
 static inline void cpuPrvTakeIrq(void)
@@ -719,11 +652,7 @@ static void cpuPrvTlbp(void)
 
 static bool cpuPrvIsInKernelMode(void)
 {
-#ifdef R4000
-	return (cpu.status & (CP0_STATUS_ERL | CP0_STATUS_EXL)) || !(cpu.status & CP0_STATUS_UM);
-#else
 	return !(cpu.status & CP0_STATUS_KUC);
-#endif
 }
 
 static bool cpuPrvMemTranslate(uint32_t *paP, uint32_t va, bool write)
@@ -735,12 +664,6 @@ static bool cpuPrvMemTranslate(uint32_t *paP, uint32_t va, bool write)
 		case 1:
 		case 2:
 		case 3:	//kuseg
-#ifdef R4000
-			if (cpu.status & CP0_STATUS_ERL) {
-				*paP = va;
-				return true;
-			}
-#endif
 			break;
 		
 		case 4:	//kseg0
@@ -904,11 +827,6 @@ static bool cpuPrvDataAccess(void* buf, uint32_t va, uint8_t sz, bool write)
 		
 		//XXX: this makes cache sizing algos work...badly
 		static uint32_t lastWrite;
-		
-		//weird mode. see r3000 doc for this, this might need adjustment for R4000
-		#ifdef R4000
-			#error "this might need adjustment"
-		#endif
 	
 		if (write) {
 			
@@ -954,12 +872,6 @@ bool cpuMemAccessExternal(void *buf, uint32_t va, uint8_t sz, bool write, enum C
 		case 1:
 		case 2:
 		case 3:	//kuseg
-#ifdef R4000
-			if ((cpu.status & CP0_STATUS_ERL) && (type == CpuAccessAsKernel || type == CpuAccessAsCurrent)) {
-				pa = va;
-				goto resolved;
-			}
-#endif
 			break;
 		
 		case 4:	//kseg0
@@ -1040,14 +952,12 @@ static void cpuPrvBranchTo(uint32_t to)
 	cpu.inDelaySlot = true;
 }
 
-#if defined(R4000) || defined(SUPPORT_LIKELY_BRANCHES)
-	static void cpuPrvSkipNextInstr(void)
-	{
-		cpu.pc = cpu.npc + 4;
-		cpu.npc += 8;
-		cpu.inDelaySlot = false;
-	}
-#endif
+static void cpuPrvSkipNextInstr(void)
+{
+	cpu.pc = cpu.npc + 4;
+	cpu.npc += 8;
+	cpu.inDelaySlot = false;
+}
 
 static bool report = 0;
 
@@ -1069,9 +979,6 @@ void cpuCycle(uint32_t ramAmount)
 	//to make life easier we do not report IRQs in the delay slot
 	if (!cpu.inDelaySlot &&
 		(cpu.status & CP0_STATUS_IE) &&
-#ifdef R4000
-		!(cpu.status & CP0_STATUS_EXL) &&
-#endif
 		cpuPrvIrqsPending()) {
 		
 		return cpuPrvTakeIrq();
@@ -1246,7 +1153,6 @@ void cpuCycle(uint32_t ramAmount)
 					cpuSetRegD(instr, (cpuGetRegS(instr) < cpuGetRegT(instr)) ? 1 : 0);
 					break;
 
-#if defined(SUPPORT_TRAPCC) || defined(R4000)
 				case 48: //TGE
 					if ((int32_t)cpuGetRegS(instr) >= (int32_t)cpuGetRegT(instr))
 						return cpuPrvTakeTrapExc();
@@ -1276,7 +1182,6 @@ void cpuCycle(uint32_t ramAmount)
 					if (cpuGetRegS(instr) != cpuGetRegT(instr))
 						return cpuPrvTakeTrapExc();
 					break;
-#endif
 				default:
 					goto invalid;
 			}
@@ -1303,7 +1208,6 @@ void cpuCycle(uint32_t ramAmount)
 						return cpuPrvBranchTo(cpu.npc + (cpuGetSImm(instr) << 2));
 					break;
 				
-			#if defined(R4000) || defined(SUPPORT_LIKELY_BRANCHES)
 			
 				case 18: //BLTZALL
 					cpu.regs[MIPS_REG_RA] = cpu.pc + 8;
@@ -1327,10 +1231,8 @@ void cpuCycle(uint32_t ramAmount)
 						return cpuPrvSkipNextInstr();
 					break;
 				
-			#endif
 					break;
 
-#if defined(SUPPORT_TRAPCC) || defined(R4000)
 				case 8: //TGEI
 					if ((int32_t)cpuGetRegS(instr) >= cpuGetSImm(instr))
 						return cpuPrvTakeTrapExc();
@@ -1360,7 +1262,6 @@ void cpuCycle(uint32_t ramAmount)
 					if ((int32_t)cpuGetRegS(instr) != cpuGetSImm(instr))
 						return cpuPrvTakeTrapExc();
 					break;
-#endif
 
 				default:
 					goto invalid;

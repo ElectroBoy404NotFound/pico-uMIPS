@@ -9,7 +9,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define MAX_MEM_REGIONS		9
+#define MAX_MEM_REGIONS		6
 
 
 typedef bool (*MemAccessF)(uint32_t pa, uint8_t size, bool write, void* buf);

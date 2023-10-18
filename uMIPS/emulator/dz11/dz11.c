@@ -23,7 +23,7 @@
 
 
 #define UART_RX_BUF_SZ		64
-#define EMU_NUM_UARTS			4
+#define EMU_NUM_UARTS	    4
 
 #define FIFO_ALARM_COUNT	16	//not a LEVEL!!!
 

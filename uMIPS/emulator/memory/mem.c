@@ -3,6 +3,8 @@
 	Non-commercial use only OR licensing@dmitry.gr
 */
 
+#pragma GCC optimize ("Ofast")
+
 #include <stdio.h>
 #include "mem.h"
 #include "../../console/console.h"
@@ -78,12 +80,9 @@ bool memAccess(uint32_t addr, uint8_t size, bool write, void* buf){
 
 	//pr("mem %c of %ub @ 0x%08X\r\n", write ? 'W' : 'R', size, addr);
 
-	for(i = 0; i < MAX_MEM_REGIONS; i++){
-		if(gMem.regions[i].pa <= addr && gMem.regions[i].pa + gMem.regions[i].sz > addr){
-		
+	for(i = 0; i < MAX_MEM_REGIONS; i++)
+		if(gMem.regions[i].pa <= addr && gMem.regions[i].pa + gMem.regions[i].sz > addr)
 			return gMem.regions[i].aF(addr, size, write & 0x7F, buf);
-		}
-	}
 	
 	console_printf("\nMemory %s of %u bytes at physical addr 0x%08x fails\r\n", (write & 0x7F) ? "write" : "read", size, (unsigned)addr);
 	

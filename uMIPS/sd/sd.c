@@ -1,3 +1,5 @@
+#pragma GCC optimize ("O2")
+
 #include "sd.h"
 
 #include "ff.h"
@@ -22,7 +24,7 @@ bool sdCardInit() {
     if (FR_OK != fr)
         console_panic("SD mount error: %s (%d)\n\r", FRESULT_str(fr), fr);
 
-    fr = f_open(&file, "0:linux.busybox", FA_READ | FA_WRITE);
+    fr = f_open(&file, "0:LinuxDiskImage.disk", FA_READ | FA_WRITE);
 
     return FR_OK == fr;
 }

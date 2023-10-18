@@ -18,7 +18,6 @@ void console_init(void)
     gpio_set_function(UART_TX_PIN, GPIO_FUNC_UART);
     gpio_set_function(UART_RX_PIN, GPIO_FUNC_UART);
     queue_init(&ser_screen_queue, sizeof(char), IO_QUEUE_LEN);
-    queue_init(&kb_queue, sizeof(char), IO_QUEUE_LEN);
 }
 
 void ser_console_task(void)
@@ -35,7 +34,6 @@ void ser_console_task(void)
     while (uart_is_readable(UART_INSTANCE))
     {
         uart_read_blocking(UART_INSTANCE, &uart_in_ch, 1);
-        // queue_try_add(&kb_queue, &uart_in_ch);
         dz11charRx(3, (uint8_t)uart_in_ch);
     }
 }
@@ -53,10 +51,8 @@ void console_putc(char c)
 void console_puts(char s[])
 {
     uint8_t n = strlen(s);
-    for (int i = 0; i < n; i++) {
-        // if(s[i] == '\n') console_putc('\r');
+    for (int i = 0; i < n; i++) 
         console_putc(s[i]);
-    }
 }
 
 char termPrintBuf[100];

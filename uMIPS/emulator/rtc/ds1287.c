@@ -3,6 +3,8 @@
 	Non-commercial use only OR licensing@dmitry.gr
 */
 
+#pragma GCC optimize ("Ofast")
+
 #include <stdint.h>
 #include "ds1287.h"
 #include "../memory/mem.h"
@@ -197,11 +199,6 @@ static bool ds1287prvMemAccess(uint32_t pa, uint8_t size, bool write, void* buf)
 			else
 				*(uint8_t*)buf = gRTC.direct[pa];
 			break;
-	}
-	
-	if (recalc) {
-		
-		//actually, nothing. let next tick handle it
 	}
 	
 	return true;
