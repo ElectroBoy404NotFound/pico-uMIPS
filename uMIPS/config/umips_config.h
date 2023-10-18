@@ -6,7 +6,7 @@
 /******************/
 
 // RAM size in megabytes
-#define EMULATOR_RAM_MB 24
+#define EMULATOR_RAM_MB 16
 
 #define TICKS_PER_SECOND 1000
 
@@ -57,9 +57,9 @@
 #define PSRAM_CHIP_SIZE (8192 * 1024)
 
 // Use two PSRAM chips?
-#define PSRAM_TWO_CHIPS   0
+#define PSRAM_TWO_CHIPS   1
 // Use three PSRAM chips?
-#define PSRAM_THREE_CHIPS 1
+#define PSRAM_THREE_CHIPS 0
 // Use four PSRAM chips?
 #define PSRAM_FOUR_CHIPS  0
 

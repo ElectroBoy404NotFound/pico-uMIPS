@@ -8,12 +8,13 @@ add_executable(pico-uMIPS
 
 	config/sd_hw_config.c
 
-	emulator/cpu.c
-	emulator/decBus.c
-	emulator/ds1287.c
-	emulator/dz11.c
-	emulator/mem.c
-	emulator/soc_rp2040.c
+	# Emulator
+	emulator/cpu/cpu.c
+	emulator/bus/decBus.c
+	emulator/rtc/ds1287.c
+	emulator/dz11/dz11.c
+	emulator/memory/mem.c
+	emulator/soc/soc_rp2040.c
 
 	sd/sd.c
 )
