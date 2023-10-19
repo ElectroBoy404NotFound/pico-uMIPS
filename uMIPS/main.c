@@ -8,6 +8,8 @@
 #include "hw_config.h"
 
 #include "psram/psram.h"
+#include "psram/cache.h"
+
 #include "console/console.h"
 
 #include "hardware/pll.h"
@@ -93,6 +95,8 @@ void core1_entry()
 
     console_printf("\x1b[32mPSRAM init OK!\n\r");
     console_printf("\x1b[32mPSRAM Baud: %d\n\r", r);
+
+    cacheInit();
 
     startEmu();
 }

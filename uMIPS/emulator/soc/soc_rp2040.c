@@ -14,6 +14,7 @@
 #include "../memory/mem.h"
 #include "../../sd/sd.h"
 #include "../../psram/psram.h"
+#include "../../psram/cache.h"
 #include "../../console/console.h"
 
 static uint32_t mRamTop;
@@ -142,6 +143,8 @@ static bool accessRom(uint32_t pa, uint8_t size, bool write, void* buf)
 bool accessRam(uint32_t pa, uint8_t size, bool write, void* buf)
 {	
 	accessPSRAM(pa, size, write, buf);
+	// if(write) cacheWrite(pa, buf, size);
+	// if(!write) cacheRead(pa, buf, size);
 	return true;
 }
 

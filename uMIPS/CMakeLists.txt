@@ -2,7 +2,7 @@ add_executable(pico-uMIPS
     main.c
 	
 	psram/psram.c
-	cache/cache.c
+	psram/cache.c
 
 	console/console.c
 
