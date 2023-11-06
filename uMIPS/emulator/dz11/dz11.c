@@ -3,10 +3,6 @@
 	Non-commercial use only OR licensing@dmitry.gr
 */
 
-
-#pragma GCC optimize ("Os")
-
-
 #include <string.h>
 #include <stdio.h>
 #include "dz11.h"

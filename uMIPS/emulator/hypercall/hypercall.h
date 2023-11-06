@@ -7,7 +7,6 @@
 
 
 #define HYPERCALL			0x4f646776
-#define MIPS_HYPERCALL      0x4f646776
 #define H_GET_MEM_MAP		0
 #define H_CONSOLE_WRITE		1
 #define H_STOR_GET_SZ		2

@@ -8,7 +8,7 @@
 // RAM size in megabytes
 #define EMULATOR_RAM_MB 16
 
-#define TICKS_PER_SECOND 1000
+#define TICKS_PER_SECOND 90000000
 
 // FPU setting
 #define FPU_SUPPORT_NONE
@@ -39,7 +39,7 @@
 // Hardware SPI instance to use for PSRAM
 #define PSRAM_SPI_INST spi1
 // PSRAM SPI speed (in MHz)
-#define PSRAM_SPI_SPEED 50
+#define PSRAM_SPI_SPEED 10
 
 #endif
 // Pins for the PSRAM SPI interface

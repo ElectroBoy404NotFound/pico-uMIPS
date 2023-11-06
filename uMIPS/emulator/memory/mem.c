@@ -3,8 +3,6 @@
 	Non-commercial use only OR licensing@dmitry.gr
 */
 
-#pragma GCC optimize ("Ofast")
-
 #include <stdio.h>
 #include "mem.h"
 #include "../../console/console.h"

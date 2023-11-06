@@ -5,7 +5,7 @@
 
 #define IO_QUEUE_LEN 15
 
-extern queue_t ser_screen_queue, kb_queue;
+extern queue_t ser_screen_queue;
 
 void console_init(void);
 void console_task(void);

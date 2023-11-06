@@ -10,7 +10,7 @@
 #include "../emulator/dz11/dz11.h"
 #include <string.h>
 
-queue_t ser_screen_queue, kb_queue;
+queue_t ser_screen_queue;
 
 void console_init(void)
 {

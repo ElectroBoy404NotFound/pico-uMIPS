@@ -3,8 +3,6 @@
 	Non-commercial use only OR licensing@dmitry.gr
 */
 
-#pragma GCC optimize ("Ofast")
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,6 +12,7 @@
 #define SUPPORT_LIKELY_BRANCHES	//sert to enable BxxL even on non-R4000
 #define SUPPORT_TRAPCC			//set to eable Tcc/Tcci instrs  even for R3000
 #define SUPPORT_LL_SC
+
 
 
 #include "../cpu/cpu.h"

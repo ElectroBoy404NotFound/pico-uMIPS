@@ -3,8 +3,6 @@
 	Non-commercial use only OR licensing@dmitry.gr
 */
 
-#pragma GCC optimize ("Ofast")
-
 #include <string.h>
 #include "../hypercall/hypercall.h"
 #include "../bus/decBus.h"
@@ -14,7 +12,6 @@
 #include "../memory/mem.h"
 #include "../../sd/sd.h"
 #include "../../psram/psram.h"
-#include "../../psram/cache.h"
 #include "../../console/console.h"
 
 static uint32_t mRamTop;
@@ -41,27 +38,17 @@ static uint8_t gRom[]  = {
   0xff, 0xff, 0x11, 0x04, 0x00, 0x00, 0x00, 0x00, 0xe8, 0xff, 0x00, 0x10, 0x84, 0x00, 0x03, 0x24
 };
 
-static inline uint64_t getTimeMilliseconds()
-{
-    absolute_time_t t = get_absolute_time();
-    return to_us_since_boot(t) / 1000;
-}
-
 void delayMsec(uint32_t msec)
 {
-	uint64_t till = getTimeMilliseconds() + (uint64_t)msec * (TICKS_PER_SECOND / 1000);
+	uint64_t till = getTime() + (uint64_t)msec * (TICKS_PER_SECOND / 1000);
 	
-	while (getTimeMilliseconds() < till);
+	while (getTime() < till);
 }
 
 
 void prPutchar(char chr)
 {	
     console_putc(chr);
-}
-void fastpathReport(uint32_t val, uint32_t addr)
-{
-	console_printf("fastpath repot: [%08x] = %08x\n", addr, val);
 }
 
 void dz11charPut(uint8_t line, uint8_t chr)
@@ -143,8 +130,6 @@ static bool accessRom(uint32_t pa, uint8_t size, bool write, void* buf)
 bool accessRam(uint32_t pa, uint8_t size, bool write, void* buf)
 {	
 	accessPSRAM(pa, size, write, buf);
-	// if(write) cacheWrite(pa, buf, size);
-	// if(!write) cacheRead(pa, buf, size);
 	return true;
 }
 
@@ -250,14 +235,14 @@ void startEmu(void)
     
     uint16_t cy = 0;
     cpuInit(ramAmt);
-	uint16_t lastMilli = getTimeMilliseconds();
+	// uint16_t lastMilli = getTimeMilliseconds();
     while(1) {
         cy++;
 		
 		cpuCycle(ramAmt);
 		
-		// if ((getTimeMilliseconds() - lastMilli) >= 10000) {
-		// 	ds1287step((getTimeMilliseconds() - lastMilli));
+		// if ((getTimeMilliseconds() - lastMilli) >= 100) {
+		// 	ds1287step((getTimeMilliseconds() - lastMilli) * 10000);
 		// 	lastMilli = getTimeMilliseconds();
 		// }
 		if(!(cy & 0xfff)) ds1287step(1);

@@ -8,16 +8,8 @@
 #include "decBus.h"
 #include "../memory/mem.h"
 
-
-#pragma GCC optimize ("Os")
-
-#if defined(COLOR_FRAMEBUFFER) || defined(NO_FRAMEBUFFER)
-	#define CSR_INITIAL_VAL		0x0000
-	//ultrix will not touch color framebuffer if we ask for console boot
-#else
-	#define CSR_INITIAL_VAL		0x0800
-	//for black and white framebuffer it will trouch so if we have none, say we have color
-#endif
+#define CSR_INITIAL_VAL		0x0800
+//for black and white framebuffer it will trouch so if we have none, say we have color
 
 static uint32_t mBusErrorAddr;
 	
@@ -43,7 +35,7 @@ static bool accessDecBusErrorReporter(uint32_t pa, uint8_t size, bool write, voi
 
 static void decBusPrvLeds(uint8_t val)
 {
-	// err_str("LEDS set to 0x%02x\r\n", (uint8_t)~val);
+	console_printf("\r\nLEDS set to 0x%02x\r\n", (uint8_t)~val);
 }
 
 static bool accessDecCSR(uint32_t pa, uint8_t size, bool write, void* buf)

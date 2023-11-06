@@ -6,7 +6,9 @@
 #ifndef _SOC_H_
 #define _SOC_H_
 
-#define RAM_AMOUNT	(32<<20)
+#include "../../config/umips_config.h"
+
+#define RAM_AMOUNT	(EMULATOR_RAM_MB<<20)
 #define EMU_RAM_BASE	0x00000000UL
 #define EMU_ROM_BASE	0x1FC00000UL	/* as per spec */
 

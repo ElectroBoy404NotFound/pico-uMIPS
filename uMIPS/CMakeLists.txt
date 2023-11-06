@@ -2,8 +2,7 @@ add_executable(pico-uMIPS
     main.c
 	
 	psram/psram.c
-	psram/cache.c
-
+	
 	console/console.c
 
 	config/sd_hw_config.c
@@ -17,6 +16,8 @@ add_executable(pico-uMIPS
 	emulator/soc/soc_rp2040.c
 
 	sd/sd.c
+
+	timebase/timebase.c
 )
 
 # Add the standard library and FatFS/SPI to the build
