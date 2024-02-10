@@ -136,6 +136,7 @@ static uint8_t ds1287prvHoursProcessRead(uint8_t val)
 
 static bool ds1287prvMemAccess(uint32_t pa, uint8_t size, bool write, void* buf)
 {
+	// console_printf("\r\nAyo, So someone does use me :) \r\n");
 	static const uint8_t maxVals[] = {59,59,59,59,23,23,7,31,12,99};
 	static const uint8_t minVals[] = {0,0,0,0,0,0,1,1,1,0};
 	bool recalc = write;

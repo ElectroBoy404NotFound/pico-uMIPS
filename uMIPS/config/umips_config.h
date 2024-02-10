@@ -10,9 +10,6 @@
 
 #define TICKS_PER_SECOND 90000000
 
-// FPU setting
-#define FPU_SUPPORT_NONE
-
 /******************/
 /* UART config
 /******************/

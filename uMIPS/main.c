@@ -93,36 +93,5 @@ void core1_entry()
     console_printf("\x1b[32mPSRAM init OK!\n\r");
     console_printf("\x1b[32mPSRAM Baud: %d\n\r", r);
 
-    // console_printf("Testing RAM...(This will take a while)\r\n");
-	// for(int i = 0; i < EMULATOR_RAM_MB * 1024 * 1024; i++) {
-	// 	uint8_t v1 = 0;
-	// 	uint8_t v2;
-	// 	accessPSRAM(i, 1, true, &v1);
-	// 	accessPSRAM(i, 1, false, &v2);
-
-	// 	if(v1 != v2) console_panic("[MAIN] Write failed at %d! Tried to write %d, but wrote %d", i, v1, v2);
-
-    //     v1 = 0xff;
-	// 	accessPSRAM(i, 1, true, &v1);
-	// 	accessPSRAM(i, 1, false, &v2);
-
-	// 	if(v1 != v2) console_panic("[MAIN] Write failed at %d! Tried to write %d, but wrote %d", i, v1, v2);
-
-    //     v1 = 0x55;
-	// 	accessPSRAM(i, 1, true, &v1);
-	// 	accessPSRAM(i, 1, false, &v2);
-
-	// 	if(v1 != v2) console_panic("[MAIN] Write failed at %d! Tried to write %d, but wrote %d", i, v1, v2);
-
-    //     v1 = 0xaa;
-	// 	accessPSRAM(i, 1, true, &v1);
-	// 	accessPSRAM(i, 1, false, &v2);
-
-	// 	if(v1 != v2) console_panic("[MAIN] Write failed at %d! Tried to write %d, but wrote %d", i, v1, v2);
-	// }
-	// console_printf("RAM test successful!\r\n");
-
-    // cacheInit();
-
     startEmu();
 }

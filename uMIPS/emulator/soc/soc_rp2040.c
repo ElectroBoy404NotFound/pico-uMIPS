@@ -13,6 +13,7 @@
 #include "../../sd/sd.h"
 #include "../../psram/psram.h"
 #include "../../console/console.h"
+#include <stdio.h>
 
 static uint32_t mRamTop;
 
@@ -38,11 +39,15 @@ static uint8_t gRom[]  = {
   0xff, 0xff, 0x11, 0x04, 0x00, 0x00, 0x00, 0x00, 0xe8, 0xff, 0x00, 0x10, 0x84, 0x00, 0x03, 0x24
 };
 
+uint64_t getTimeMillis() {
+	return to_ms_since_boot(get_absolute_time());
+}
+
 void delayMsec(uint32_t msec)
 {
-	uint64_t till = getTime() + (uint64_t)msec * (TICKS_PER_SECOND / 1000);
+	uint64_t till = getTimeMillis() + (uint64_t)msec * (TICKS_PER_SECOND / 1000);
 	
-	while (getTime() < till);
+	while (getTimeMillis() < till);
 }
 
 
@@ -231,21 +236,19 @@ void startEmu(void)
 
     console_printf("uMIPS v2.2.0 (BL ver ");
     console_printf("%d", *(volatile uint8_t*)8 - 0x10);
-    console_printf(")\r\nwill run with 3 RAM chips");
+    console_printf(")\r\nwill run with ");
+	console_printf(PSRAM_TWO_CHIPS ? "2" : PSRAM_THREE_CHIPS ? "3" : "4");
+	console_printf(" PSRAM Chips");
     
-    uint16_t cy = 0;
     cpuInit(ramAmt);
-	// uint16_t lastMilli = getTimeMilliseconds();
+	uint64_t lastMilli = getTimeMillis();
     while(1) {
-        cy++;
+        cpuCycle(ramAmt);
 		
-		cpuCycle(ramAmt);
-		
-		// if ((getTimeMilliseconds() - lastMilli) >= 100) {
-		// 	ds1287step((getTimeMilliseconds() - lastMilli) * 10000);
-		// 	lastMilli = getTimeMilliseconds();
-		// }
-		if(!(cy & 0xfff)) ds1287step(1);
+		if ((getTimeMillis() - lastMilli) >= 100) {
+			ds1287step((getTimeMillis() - lastMilli) * 10000);
+			lastMilli = getTimeMillis();
+		}
     }
 
     console_printf("CPU exited!");
