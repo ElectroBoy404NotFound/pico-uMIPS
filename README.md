@@ -24,8 +24,24 @@ The code does the following (in order):
 8. Initlise and mount SD card
 9. Open disk image
 10. Start uMIPS CPU
+1. Over volt the RP2040 core slightly
+2. Over clock the RP2040 to 400MHz
+3. Initlise the UART interface
+4. Initlise the console (UART and emulator glue) API
+5. Initlise and reset PSRAM
+6. Switch threads and Hand over control to RP2040 SoC uMIPS implementation
+7. Initlise MMIO
+8. Initlise and mount SD card
+9. Open disk image
+10. Start uMIPS CPU
 
 The boot process of Linux goes as follows:
+1. uMIPS CPU starts
+2. Hardcoded ROM Jumps into Disk Image's BROM (BootROM)
+3. BROM copies Kernel into RAM
+4. BROM clears BSS
+5. BROM jumps into kernel location
+6. Linux Kernel starts executing.
 1. uMIPS CPU starts
 2. Hardcoded ROM Jumps into Disk Image's BROM (BootROM)
 3. BROM copies Kernel into RAM
@@ -65,14 +81,12 @@ GPIO 19   | SD Card | MOSI
 GPIO 20   | SD Card | CS/SS
 VSYS      | SD Card | VCC
 GND       | SD Card | GND
-          |         |
 GPIO10    | PSRAM 1 | CLK/SCK/SCLK
 GPIO12    | PSRAM 1 | MISO/SO/SIO[1]
 GPIO11    | PSRAM 1 | MOSI/SI/SIO[0]
 GPIO21    | PSRAM 1 | CS#/CS/SS
 3v3 (OUT) | PSRAM 1 | VCC
 GND       | PSRAM 1 | VSS
-          |         |
 GPIO10    | PSRAM 2 | CLK/SCK/SCLK
 GPIO12    | PSRAM 2 | MISO/SO/SIO[1]
 GPIO11    | PSRAM 2 | MOSI/SI/SIO[0]
@@ -81,8 +95,14 @@ GPIO22    | PSRAM 2 | CS#/CS/SS
 GND       | PSRAM 2 | VSS
 
 5. Now the Circuit is ready to be flashed and run Linux!
+5. Now the Circuit is ready to be flashed and run Linux!
 
 PCB:
+1. Solder the Raspberry Pi Pico to the PCB according to the footprint
+2. Solder the Micro SD Card Slot according to the footprint
+3. Solder the PSRAM Chips according to the footprint
+4. Solder Male headers as shown on silkscreen if required (For debugging)
+5. Now the Circuit is ready to be flashed and run linux!
 1. Solder the Raspberry Pi Pico to the PCB according to the footprint
 2. Solder the Micro SD Card Slot according to the footprint
 3. Solder the PSRAM Chips according to the footprint
@@ -98,11 +118,22 @@ PCB:
 5. Then `cmake ..` for a release build or `cmake -DCMAKE_BUILD_TYPE=Debug ..` for a debug build
 6. Run `make`
 7. The output will be in build/uMIPS/ folder
+1. Setup the Pico SDK
+2. Clone the repo.
+3. cd into the folder in a terminal
+4. Run `mkdir build`
+5. Then `cmake ..` for a release build or `cmake -DCMAKE_BUILD_TYPE=Debug ..` for a debug build
+6. Run `make`
+7. The output will be in build/uMIPS/ folder
 
 ##### Flashing the Emulator Code (BOOTSEL Mode)
 1. Disconnect the Raspberry Pi Pico from the computer
 2. While pressing the `BOOTSEL` button on the pico, connect the pico the the computer
 3. Copy the file `build/uMIPS/pico-uMIPS.uf2` into the newly appeared flash drive `RPI-RP2`
+1. Disconnect the Raspberry Pi Pico from the computer
+2. While pressing the `BOOTSEL` button on the pico, connect the pico the the computer
+3. Copy the file `build/uMIPS/pico-uMIPS.uf2` into the newly appeared flash drive `RPI-RP2`
 
 ##### Preparing the SD Card
+TODO
 TODO
