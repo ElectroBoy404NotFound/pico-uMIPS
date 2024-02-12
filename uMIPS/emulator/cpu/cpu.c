@@ -8,6 +8,7 @@
 #include <string.h>
 #include "../../config/umips_config.h"
 #include "../../console/console.h"
+#include "../fpu/fpu.h"
 
 #define SUPPORT_LIKELY_BRANCHES	//sert to enable BxxL even on non-R4000
 #define SUPPORT_TRAPCC			//set to eable Tcc/Tcci instrs  even for R3000

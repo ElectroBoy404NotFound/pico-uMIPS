@@ -10,6 +10,8 @@
 
 #define TICKS_PER_SECOND 90000000
 
+#define FPU_SUPPORT_FULL
+
 /******************/
 /* UART config
 /******************/
@@ -29,14 +31,14 @@
 /******************/
 
 // Use hardware SPI for PSRSAM (bitbang otherwise)
-#define PSRAM_HARDWARE_SPI 0
+#define PSRAM_HARDWARE_SPI 1
 
 #if PSRAM_HARDWARE_SPI
 
 // Hardware SPI instance to use for PSRAM
 #define PSRAM_SPI_INST spi1
 // PSRAM SPI speed (in MHz)
-#define PSRAM_SPI_SPEED 10
+#define PSRAM_SPI_SPEED 40
 
 #endif
 // Pins for the PSRAM SPI interface

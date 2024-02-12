@@ -14,6 +14,7 @@ add_executable(pico-uMIPS
 	emulator/dz11/dz11.c
 	emulator/memory/mem.c
 	emulator/soc/soc_rp2040.c
+	emulator/fpu/fpu.c
 
 	sd/sd.c
 )
