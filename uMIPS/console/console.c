@@ -1,3 +1,5 @@
+#pragma GCC optimize ("Ofast")
+
 #include "pico/stdlib.h"
 
 #include <stdio.h>

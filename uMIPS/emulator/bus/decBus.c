@@ -3,6 +3,8 @@
 	Non-commercial use only OR licensing@dmitry.gr
 */
 
+#pragma GCC optimize ("Os")
+
 #include <stdio.h>
 #include "../../console/console.h"
 #include "decBus.h"

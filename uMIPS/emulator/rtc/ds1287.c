@@ -3,6 +3,8 @@
 	Non-commercial use only OR licensing@dmitry.gr
 */
 
+#pragma GCC optimize ("Os")
+
 #include <stdint.h>
 #include "ds1287.h"
 #include "../memory/mem.h"

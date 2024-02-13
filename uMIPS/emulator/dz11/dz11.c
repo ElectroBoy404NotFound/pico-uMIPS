@@ -3,13 +3,14 @@
 	Non-commercial use only OR licensing@dmitry.gr
 */
 
+#pragma GCC optimize ("Os")
+
 #include <string.h>
 #include <stdio.h>
 #include "dz11.h"
 #include "../memory/mem.h"
 #include "../soc/soc.h"
 #include "../cpu/cpu.h"
-
 #include "../../console/console.h"
 
 #define DZ11_REG_CSR			0

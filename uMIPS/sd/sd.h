@@ -12,7 +12,7 @@
 #define SD_BLOCK_SIZE		512
 
 bool sdCardInit();
-uint32_t sdGetNumSecs(void);
+uint64_t sdNoSectors();
 
 bool sdSecRead(uint32_t sec, void *dst);
 bool sdSecWrite(uint32_t sec, void *src);

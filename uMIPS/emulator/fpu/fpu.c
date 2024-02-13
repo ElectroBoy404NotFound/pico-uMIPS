@@ -3,12 +3,12 @@
 	Non-commercial use only OR licensing@dmitry.gr
 */
 
+#pragma GCC optimize ("Ofast")
+
 #include <stdbool.h>
 #include <math.h>
 #include "fpu.h"
 #include "../../config/umips_config.h"
-
-
 
 ///XXX
 	//#define FPU_LOG

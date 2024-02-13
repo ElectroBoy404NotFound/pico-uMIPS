@@ -3,6 +3,8 @@
 	Non-commercial use only OR licensing@dmitry.gr
 */
 
+#pragma GCC optimize ("Os")
+
 #include <string.h>
 #include "../hypercall/hypercall.h"
 #include "../bus/decBus.h"
@@ -18,6 +20,8 @@
 static uint32_t mRamTop;
 
 static uint8_t mDiskBuf[SD_BLOCK_SIZE];
+
+bool globalReadyToTickRTC = false;
 
 static uint8_t gRom[]  = {
   0x23, 0x00, 0x11, 0x04, 0x00, 0x00, 0x00, 0x00, 0x28, 0x00, 0x00, 0x10, 0x04, 0x00, 0x03, 0x24, 
@@ -98,8 +102,8 @@ static bool massStorageAccess(uint8_t op, uint32_t sector, void *buf)
 {
     switch (op) {
         case MASS_STORE_OP_GET_SZ:
-            *(uint32_t*)buf = 16777216;
-			console_printf("\33[33mNumber of sectors requested. Assuming each sector is 512 bytes and file can go to 8GB.\33[m\n");
+            *(uint32_t*)buf = sdNoSectors();
+			// console_printf("\33[33mNumber of sectors requested. Assuming each sector is 512 bytes and file can go to 8GB.\33[m\n");
             return true;
         
         case MASS_STORE_OP_READ:
@@ -241,14 +245,10 @@ void startEmu(void)
 	console_printf(" PSRAM Chips");
     
     cpuInit(ramAmt);
-	uint64_t lastMilli = getTimeMillis();
+
+	globalReadyToTickRTC = true;
     while(1) {
         cpuCycle(ramAmt);
-		
-		if ((getTimeMillis() - lastMilli) >= 100) {
-			ds1287step((getTimeMillis() - lastMilli) * 10000);
-			lastMilli = getTimeMillis();
-		}
     }
 
     console_printf("CPU exited!");

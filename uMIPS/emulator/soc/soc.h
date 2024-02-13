@@ -47,5 +47,4 @@ void socInputCheck(void);
 
 void startEmu();
 
-
 #endif

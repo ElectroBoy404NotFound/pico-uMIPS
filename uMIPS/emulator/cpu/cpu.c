@@ -3,6 +3,8 @@
 	Non-commercial use only OR licensing@dmitry.gr
 */
 
+#pragma GCC optimize ("Ofast")
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,11 +16,9 @@
 #define SUPPORT_TRAPCC			//set to eable Tcc/Tcci instrs  even for R3000
 #define SUPPORT_LL_SC
 
-
-
 #include "../cpu/cpu.h"
 #include "../memory/mem.h"
-#include "../bus/decBus.h"
+#include "../bus/decBus.h"	
 
 #define EMU_NUM_TLB_ENTRIES			64
 #define EMU_NUM_WIRED_TLB_ENTRIES	8

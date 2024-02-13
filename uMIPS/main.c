@@ -15,6 +15,8 @@
 
 #include "emulator/soc/soc.h"
 
+extern bool globalReadyToTickRTC;
+
 void core1_entry();
 
 void gset_sys_clock_pll(uint32_t vco_freq, uint post_div1, uint post_div2)
@@ -80,8 +82,15 @@ int main()
     multicore_fifo_drain();
     multicore_launch_core1(core1_entry);
 
-    while (true)
+    uint64_t lastMilli = getTimeMillis();
+    while (true) {
         console_task();
+
+        if ((getTimeMillis() - lastMilli) >= 100) {
+			if(globalReadyToTickRTC) ds1287step((getTimeMillis() - lastMilli) * 100000);
+			lastMilli = getTimeMillis();
+		}
+    }
 }
 
 void core1_entry()

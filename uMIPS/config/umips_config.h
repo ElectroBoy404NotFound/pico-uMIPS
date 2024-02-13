@@ -31,7 +31,7 @@
 /******************/
 
 // Use hardware SPI for PSRSAM (bitbang otherwise)
-#define PSRAM_HARDWARE_SPI 1
+#define PSRAM_HARDWARE_SPI 0
 
 #if PSRAM_HARDWARE_SPI
 
