@@ -12,10 +12,6 @@
 
 #define FPU_SUPPORT_FULL
 
-#define ICACHE_LINE_SZ	32	//in bytes
-#define ICACHE_NUM_SETS	0
-#define ICACHE_NUM_WAYS	2
-
 /******************/
 /* UART config
 /******************/

@@ -78,7 +78,8 @@ enum CpuMemAccessType {
 uint32_t cpuGetRegExternal(uint8_t reg);
 void cpuSetRegExternal(uint8_t reg, uint32_t val);
 bool cpuMemAccessExternal(void *buf, uint32_t va, uint8_t sz, bool write, enum CpuMemAccessType type);
-
+bool cpuPrvMemTranslate(uint32_t *paP, uint32_t va, bool write);
+void cpuPrvTakeException(uint8_t excCode);
 uint32_t cpuGetCyCnt(void);
 
 //provided externally

@@ -10,6 +10,7 @@
 #include <string.h>
 #include "../../config/umips_config.h"
 #include "../../console/console.h"
+#include "../../psram/icache.h"
 #include "../fpu/fpu.h"
 
 #define SUPPORT_LIKELY_BRANCHES	//sert to enable BxxL even on non-R4000
@@ -279,7 +280,7 @@ void cpuIrq(uint8_t idx, bool raise)
 	}
 }
 
-static void cpuPrvTakeException(uint8_t excCode)
+void cpuPrvTakeException(uint8_t excCode)
 {
 	uint32_t vector = 0x80000000;
 
@@ -570,6 +571,11 @@ static int_fast8_t cpuPrvTlbHashSearch(uint32_t pageVa)
 static void cpuPrvMaybeAsidChanded(uint32_t prevVal)
 {
 	(void)prevVal;
+	if ((prevVal ^ cpu.entryHi) & TLB_ENTRYHI_ASID_MASK) {
+		
+		//changed
+		cpuIcacheFlushEntire();
+	}
 }
 
 static void cpuPrvTlbr(void)
@@ -594,6 +600,8 @@ static void cpuPrvTlbWrite(uint8_t index)
 	cpu.tlb[index].flagsAsByte = (cpu.entryLo & TLB_ENTRYLO_FLAGS_MASK) >> TLB_ENTRYLO_FLAGS_SHIFT;
 	
 	cpuPrvTlbHashAdd(index);
+
+	cpuIcacheFlushEntire();
 }
 
 static void cpuPrvTlbwi(void)
@@ -638,7 +646,7 @@ static bool cpuPrvIsInKernelMode(void)
 	return !(cpu.status & CP0_STATUS_KUC);
 }
 
-static bool cpuPrvMemTranslate(uint32_t *paP, uint32_t va, bool write)
+bool cpuPrvMemTranslate(uint32_t *paP, uint32_t va, bool write)
 {
 	int_fast8_t idx;
 	
@@ -733,6 +741,7 @@ static bool cpuPrvDataAccess(void* buf, uint32_t va, uint8_t sz, bool write)
 		if (write) {
 			if (sz == 4)
 				lastWrite = *(uint32_t*)buf;
+			cpuIcacheFlushEntire();
 		}
 		else {
 			switch (sz) {
@@ -884,7 +893,7 @@ void cpuCycle(uint32_t ramAmount)
 		return cpuPrvTakeIrq();
 	}
 	
-	if (!cpuPrvInstrFetch(&instr))
+	if (!cpuInstrFetchCached(cpu.pc, &instr))
 		return;
 		
 	if (report) {
@@ -1830,6 +1839,8 @@ void cpuInit(uint32_t ramAmount)
 	cpu.pc = 0xBFC00000UL;	/* mips gets reset to this addr */
 	cpu.npc = cpu.pc + 4;
 	
+	cpuIcacheFlushEntire();
+
 	//having these in a chain simplifies removal
 	for (i = 0; i < EMU_NUM_TLB_ENTRIES; i++) {
 		cpu.tlb[i].va = 0x80000000;

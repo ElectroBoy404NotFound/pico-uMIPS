@@ -4,6 +4,7 @@
 
 #include "../config/umips_config.h"
 #include "psram.h"
+#include "cache.h"
 
 #if PSRAM_HARDWARE_SPI
 #include "hardware/spi.h"
@@ -158,7 +159,7 @@ int initPSRAM()
 }
 
 void readPSRAM(uint32_t addr, size_t size, void *bufP) {
-    accessPSRAM(addr, size, false, bufP);
+    // accessPSRAM(addr, size, false, bufP);
     // if(size != 64)
     //     cacheRead(addr, bufP, size);
     // else {
@@ -166,10 +167,14 @@ void readPSRAM(uint32_t addr, size_t size, void *bufP) {
     //     cacheRead(addr + 32, bufP + 32, 32);
     // }
 
-    // cache_read(addr, bufP, size);
+    // cacheRead(addr, bufP, size);
+
+    cache_read(addr, bufP, size);
+
+    // cache_read_l2(addr, bufP, size);
 }
 void writePSRAM(uint32_t addr, size_t size, void *bufP) {
-    accessPSRAM(addr, size, true, bufP);
+    // accessPSRAM(addr, size, true, bufP);
     // if(size != 64)
     //     cacheWrite(addr, bufP, size);
     // else {
@@ -177,7 +182,11 @@ void writePSRAM(uint32_t addr, size_t size, void *bufP) {
     //     cacheWrite(addr + 32, bufP + 32, 32);
     // }
 
-    // cache_write(addr, bufP, size);
+    // cacheWrite(addr, bufP, size);
+
+    cache_write(addr, bufP, size);
+
+    // cache_write_l2(addr, bufP, size);
 }
 
 uint8_t cmdAddr[5];

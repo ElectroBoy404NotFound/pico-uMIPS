@@ -14,6 +14,7 @@
 #include "hardware/clocks.h"
 
 #include "emulator/soc/soc.h"
+#include "emulator/rtc/ds1287.h"
 
 extern bool globalReadyToTickRTC;
 

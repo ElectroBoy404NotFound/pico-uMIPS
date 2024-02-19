@@ -1,7 +1,4 @@
-#define CACHE_TYPE 0
-#pragma GCC optimize ("Ofast")
-
-#if CACHE_TYPE == 0
+#pragma GCC optimize ("Os")
 
 /*
 	(c) 2021 Dmitry Grinberg   https://dmitry.gr
@@ -11,10 +8,13 @@
 #include <string.h>
 #include <stddef.h>
 #include "cache.h"
+#include "cache_l2.h"
 #include "psram.h"
 
+#include "../console/console.h"
+
 //no matter how i play it, 64-byte lines make things slower, not faster
-#define CACHE_LINE_SIZE_ORDER	5		//must be at least the size of icache line, or else...
+#define CACHE_LINE_SIZE_ORDER	6		//must be at least the size of icache line, or else...
 #define CACHE_NUM_WAYS			2		//number of lines a given PA can be in
 #define CACHE_NUM_SETS			20		//number of buckets of PAs
 
@@ -45,6 +45,9 @@ struct Cache {
 
 static struct Cache mCache;
 
+void spiRamPrvCachelineWriteQuadChannel(uint32_t addr, void* src);
+void spiRamPrvCachelineReadQuadChannel(uint32_t addr, void* dst);
+
 void cacheInit(void)
 {
 	uint_fast16_t way, set;
@@ -57,7 +60,7 @@ void cacheInit(void)
 	}
 }
 
-static uint_fast16_t spiRamCachePrvHash(uint32_t addr)
+static uint_fast16_t cachePrvHash(uint32_t addr)
 {
 	#if (CACHE_NUM_SETS & (CACHE_NUM_SETS - 1))
 	
@@ -129,14 +132,14 @@ static uint_fast16_t spiRamCachePrvHash(uint32_t addr)
 	return addr;
 }
 
-static uint_fast16_t spiRamCachePrvPickVictim(struct Cache *cache)
+static uint_fast16_t cachePrvPickVictim(struct Cache *cache)
 {
-	return getTimeMillis() % CACHE_NUM_WAYS;
+	return to_ms_since_boot(get_absolute_time()) % CACHE_NUM_WAYS;
 }
 
-static struct CacheLine* spiRamCachePrvFillLine(struct Cache *cache, struct CacheSet *set, uint32_t addr, bool loadFromRam)
+static struct CacheLine* cachePrvFillLine(struct Cache *cache, struct CacheSet *set, uint32_t addr, bool loadFromRam)
 {
-	uint_fast16_t idx = spiRamCachePrvPickVictim(cache);
+	uint_fast16_t idx = cachePrvPickVictim(cache);
 	struct CacheLine *line = &set->line[idx];
 	
 //	pr("picked victim way %u currently holding addr 0x%08x, %s\n", idx, line->addr * CACHE_LINE_SIZE, line->dirty ? "DIRTY" : "CLEAN");
@@ -239,10 +242,12 @@ static struct CacheLine* spiRamCachePrvFillLine(struct Cache *cache, struct Cach
 
 
 void spiRamPrvCachelineWriteQuadChannel(uint32_t addr, void* src) {
-    accessPSRAM(addr, CACHE_LINE_SIZE, true, src);
+    // accessPSRAM(addr, CACHE_LINE_SIZE, true, src);
+    cache_write_l2(addr, src, CACHE_LINE_SIZE);
 }
 void spiRamPrvCachelineReadQuadChannel(uint32_t addr, void* dst) {
-    accessPSRAM(addr, CACHE_LINE_SIZE, false, dst);
+    // accessPSRAM(addr, CACHE_LINE_SIZE, false, dst);
+    cache_read_l2(addr, dst, CACHE_LINE_SIZE);
 }
 
 
@@ -341,14 +346,14 @@ void __attribute__((naked, noinline)) cacheRead(uint32_t addr, void *dataP, uint
 void __attribute__((used)) spiRamRead_slowpath(uint32_t addr, void *dataP, uint_fast16_t sz)
 {
     struct Cache *cache = &mCache;
-    struct CacheSet *set = &cache->set[spiRamCachePrvHash(addr)];
+    struct CacheSet *set = &cache->set[cachePrvHash(addr)];
     uint32_t *dptr, *dst = (uint32_t*)dataP, dummy1, dummy2;
     struct CacheLine *line; 
 
 //	pr("slow read %u @ 0x%08x -> set %u\n", sz, addr, set - &cache->set[0]);
     
 //	pr("fill\n", sz, addr);
-    line = spiRamCachePrvFillLine(cache, set, addr, true);
+    line = cachePrvFillLine(cache, set, addr, true);
 
     
     switch (sz) {
@@ -541,7 +546,7 @@ void __attribute__((naked, noinline)) cacheWrite(uint32_t addr, const void *data
 void __attribute__((used)) spiRamWrite_slowpath(uint32_t addr, const void *dataP, uint_fast16_t sz)
 {
     struct Cache *cache = &mCache;
-    struct CacheSet *set = &cache->set[spiRamCachePrvHash(addr)];
+    struct CacheSet *set = &cache->set[cachePrvHash(addr)];
     const uint32_t *src = (const uint32_t*)dataP;
     uint32_t dummy1, dummy2;
     struct CacheLine *line; 
@@ -552,7 +557,7 @@ void __attribute__((used)) spiRamWrite_slowpath(uint32_t addr, const void *dataP
     
     //not found
 //	pr("fill\n", sz, addr);
-    line = spiRamCachePrvFillLine(cache, set, addr, sz != CACHE_LINE_SIZE);
+    line = cachePrvFillLine(cache, set, addr, sz != CACHE_LINE_SIZE);
     
     switch (sz) {
         case 1:
@@ -636,178 +641,3 @@ void __attribute__((used)) spiRamWrite_slowpath(uint32_t addr, const void *dataP
     }
     line->dirty = 1;
 }
-
-#else
-
-/*
- * Copyright (c) 2023, Jisheng Zhang <jszhang@kernel.org>. All rights reserved.
- *
- * Modified by Vlad Tomoiaga (tvlad1234)
- * SPDX-License-Identifier: BSD-3-Clause
- */
-
-#include <stdint.h>
-#include <string.h>
-
-#include "cache.h"
-#include "psram.h"
-
-#define psram_write(handle, ofs, p, sz) accessPSRAM(ofs, sz, true, p)
-#define psram_read(handle, ofs, p, sz) accessPSRAM(ofs, sz, false, p)
-
-struct cacheline
-{
-	uint8_t data[64];
-};
-
-static uint64_t accessed, hit;
-static uint32_t tags[4096 / 64 / 2][2];
-static struct cacheline cachelines[4096 / 64 / 2][2];
-
-/*
- * bit[0]: valid
- * bit[1]: dirty
- * bit[2]: for LRU
- * bit[3:10]: reserved
- * bit[11:31]: tag
- */
-#define VALID (1 << 0)
-#define DIRTY (1 << 1)
-#define LRU (1 << 2)
-#define LRU_SFT 2
-#define TAG_MSK 0xfffff800
-
-/*
- * bit[0: 5]: offset
- * bit[6: 10]: index
- * bit[11: 31]: tag
- */
-static inline int get_index(uint32_t addr)
-{
-	return (addr >> 6) & 0x1f;
-}
-
-void cache_write(uint32_t ofs, void *buf, uint32_t size)
-{
-	// if (((ofs | (64 - 1)) != ((ofs + size - 1) | (64 - 1))))
-	//	printf("write cross boundary\n");
-
-	int ti, i, index = get_index(ofs);
-	uint32_t *tp;
-	uint8_t *p;
-
-	++accessed;
-
-	for (i = 0; i < 2; i++)
-	{
-		tp = &tags[index][i];
-		p = cachelines[index][i].data;
-		if (*tp & VALID)
-		{
-			if ((*tp & TAG_MSK) == (ofs & TAG_MSK))
-			{
-				++hit;
-				ti = i;
-				break;
-			}
-			else
-			{
-				if (i != 1)
-					continue;
-
-				ti = 1 - ((*tp & LRU) >> LRU_SFT);
-				tp = &tags[index][ti];
-				p = cachelines[index][ti].data;
-
-				if (*tp & DIRTY)
-				{
-					psram_write(handle, *tp & ~0x3f, p, 64);
-				}
-				psram_read(handle, ofs & ~0x3f, p, 64);
-				*tp = ofs & ~0x3f;
-				*tp |= VALID;
-			}
-		}
-		else
-		{
-			if (i != 1)
-				continue;
-
-			ti = i;
-			psram_read(handle, ofs & ~0x3f, p, 64);
-			*tp = ofs & ~0x3f;
-			*tp |= VALID;
-		}
-	}
-
-	tags[index][1] &= ~(LRU);
-	tags[index][1] |= (ti << LRU_SFT);
-	memcpy(p + (ofs & 0x3f), buf, size);
-	*tp |= DIRTY;
-}
-
-void cache_read(uint32_t ofs, void *buf, uint32_t size)
-{
-	// if (((ofs | (64 - 1)) != ((ofs + size - 1) | (64 - 1))))
-	//	printf("read cross boundary\n");
-
-	int ti, i, index = get_index(ofs);
-	uint32_t *tp;
-	uint8_t *p;
-
-	++accessed;
-
-	for (i = 0; i < 2; i++)
-	{
-		tp = &tags[index][i];
-		p = cachelines[index][i].data;
-		if (*tp & VALID)
-		{
-			if ((*tp & TAG_MSK) == (ofs & TAG_MSK))
-			{
-				++hit;
-				ti = i;
-				break;
-			}
-			else
-			{
-				if (i != 1)
-					continue;
-
-				ti = 1 - ((*tp & LRU) >> LRU_SFT);
-				tp = &tags[index][ti];
-				p = cachelines[index][ti].data;
-
-				if (*tp & DIRTY)
-				{
-					psram_write(handle, *tp & ~0x3f, p, 64);
-				}
-				psram_read(handle, ofs & ~0x3f, p, 64);
-				*tp = ofs & ~0x3f;
-				*tp |= VALID;
-			}
-		}
-		else
-		{
-			if (i != 1)
-				continue;
-
-			ti = i;
-			psram_read(handle, ofs & ~0x3f, p, 64);
-			*tp = ofs & ~0x3f;
-			*tp |= VALID;
-		}
-	}
-
-	tags[index][1] &= ~(LRU);
-	tags[index][1] |= (ti << LRU_SFT);
-	memcpy(buf, p + (ofs & 0x3f), size);
-}
-
-void cache_get_stat(uint64_t *phit, uint64_t *paccessed)
-{
-	*phit = hit;
-	*paccessed = accessed;
-}
-
-#endif
