@@ -3,7 +3,7 @@
 	Non-commercial use only OR licensing@dmitry.gr
 */
 
-#pragma GCC optimize ("Os")
+#pragma GCC optimize ("Ofast")
 
 #include <stdint.h>
 #include "ds1287.h"

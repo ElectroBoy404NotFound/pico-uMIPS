@@ -69,6 +69,11 @@ static inline bool gset_sys_clock_khz(uint32_t freq_khz, bool required)
     return false;
 }
 
+bool tickRTC(struct repeating_timer *t) {
+    if(globalReadyToTickRTC) ds1287step(1);
+    return true;
+}
+
 int main()
 {
     sleep_ms(1000);
@@ -82,14 +87,11 @@ int main()
     multicore_fifo_drain();
     multicore_launch_core1(core1_entry);
 
-    uint64_t lastMilli = getTimeMillis();
+    struct repeating_timer timer;
+    add_repeating_timer_us(-122, tickRTC, NULL, &timer);
+
     while (true) {
         console_task();
-
-        if ((getTimeMillis() - lastMilli) >= 100) {
-			if(globalReadyToTickRTC) ds1287step((getTimeMillis() - lastMilli) * 100000);
-			lastMilli = getTimeMillis();
-		}
     }
 }
 

@@ -137,8 +137,11 @@ static bool accessRom(uint32_t pa, uint8_t size, bool write, void* buf)
 }
 
 bool accessRam(uint32_t pa, uint8_t size, bool write, void* buf)
-{	
-	accessPSRAM(pa, size, write, buf);
+{
+	if(write)
+		writePSRAM(pa, size, buf);
+	else
+		readPSRAM(pa, size, buf);
 	return true;
 }
 
@@ -189,7 +192,7 @@ bool cpuExtHypercall(void)	//call type in $at, params in $a0..$a3, return in $v0
 			pa = cpuGetRegExternal(MIPS_REG_A1);
 			ret = massStorageAccess(MASS_STORE_OP_READ, blk, mDiskBuf);
 			for (ofst = 0; ofst < SD_BLOCK_SIZE; ofst += 64)
-				accessPSRAM(pa + ofst, 64, true, mDiskBuf + ofst);
+				writePSRAM(pa + ofst, 64, mDiskBuf + ofst);
 			cpuSetRegExternal(MIPS_REG_V0, ret);
 			if (!ret) {
 				console_panic(" rd_block(%u, 0x%08x) -> %d\n", blk, pa, ret);
@@ -200,7 +203,7 @@ bool cpuExtHypercall(void)	//call type in $at, params in $a0..$a3, return in $v0
 			blk = cpuGetRegExternal(MIPS_REG_A0);
 			pa = cpuGetRegExternal(MIPS_REG_A1);
 			for (ofst = 0; ofst < SD_BLOCK_SIZE; ofst += 64)
-				accessPSRAM(pa + ofst, 64, false, mDiskBuf + ofst);
+				readPSRAM(pa + ofst, 64, mDiskBuf + ofst);
 			ret = massStorageAccess(MASS_STORE_OP_WRITE, blk, mDiskBuf);
 			cpuSetRegExternal(MIPS_REG_V0, ret);
 			if (!ret) {
@@ -241,7 +244,7 @@ void startEmu(void)
     console_printf("uMIPS v2.2.0 (BL ver ");
     console_printf("%d", *(volatile uint8_t*)8 - 0x10);
     console_printf(")\r\nwill run with ");
-	console_printf(PSRAM_TWO_CHIPS ? "2" : PSRAM_THREE_CHIPS ? "3" : "4");
+	console_printf("2");
 	console_printf(" PSRAM Chips");
     
     cpuInit(ramAmt);

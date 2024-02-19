@@ -17,6 +17,7 @@
 #define PSRAM_CMD_WRITE 0x02
 #define PSRAM_KGD 0x5D
 
+#pragma GCC optimize ("Ofast")
 #define selectPsramChip(c) gpio_put(c, false)
 #define deSelectPsramChip(c) gpio_put(c, true)
 
@@ -24,12 +25,7 @@
 #define spi_set_mosi(value) gpio_put(PSRAM_SPI_PIN_TX, value)
 #define spi_read_miso() gpio_get(PSRAM_SPI_PIN_RX)
 
-#define spi_pulse_sck()                \
-    {                                  \
-        gpio_put(PSRAM_SPI_PIN_CK, 1); \
-        asm("nop");                    \
-        gpio_put(PSRAM_SPI_PIN_CK, 0); \
-    }
+#pragma GCC optimize ("O2")
 
 void spi_tx_array(const uint8_t *data, size_t size)
 {
@@ -38,7 +34,9 @@ void spi_tx_array(const uint8_t *data, size_t size)
         for (int j = 7; j >= 0; j--)
         {
             spi_set_mosi((data[i] >> j) & 0x01);
-            spi_pulse_sck();
+            gpio_put(PSRAM_SPI_PIN_CK, 1); 
+            asm("nop");                    
+            gpio_put(PSRAM_SPI_PIN_CK, 0);
         }
     }
 }
@@ -50,7 +48,9 @@ void spi_rx_array(uint8_t *data, size_t size)
         uint8_t byte = 0;
         for (int j = 7; j >= 0; j--)
         {
-            spi_pulse_sck();
+            gpio_put(PSRAM_SPI_PIN_CK, 1); 
+            asm("nop");                    
+            gpio_put(PSRAM_SPI_PIN_CK, 0);
             byte |= (spi_read_miso() << j);
         }
         data[i] = byte;
@@ -64,6 +64,9 @@ void spi_rx_array(uint8_t *data, size_t size)
 #define PSRAM_SPI_WRITE(buf, sz) spi_write_blocking(PSRAM_SPI_INST, buf, sz)
 #define PSRAM_SPI_READ(buf, sz) spi_read_blocking(PSRAM_SPI_INST, 0, buf, sz)
 #endif
+
+#pragma GCC optimize ("Ofast")
+
 
 void sendPsramCommand(uint8_t cmd, uint chip)
 {
@@ -93,34 +96,18 @@ void psramReadID(uint chip, uint8_t *dst)
 
 int initPSRAM()
 {
+    // spi_pulse_sck_asm();
     gpio_init(PSRAM_SPI_PIN_S1);
-#if PSRAM_TWO_CHIPS || PSRAM_THREE_CHIPS || PSRAM_FOUR_CHIPS
     gpio_init(PSRAM_SPI_PIN_S2);
-#if PSRAM_THREE_CHIPS || PSRAM_FOUR_CHIPS
-    gpio_init(PSRAM_SPI_PIN_S3);
-#if PSRAM_FOUR_CHIPS
-    gpio_init(PSRAM_SPI_PIN_S4);
-#endif
-#endif
-#endif
+
     gpio_init(PSRAM_SPI_PIN_TX);
     gpio_init(PSRAM_SPI_PIN_RX);
     gpio_init(PSRAM_SPI_PIN_CK);
 
     gpio_set_dir(PSRAM_SPI_PIN_S1, GPIO_OUT);
     deSelectPsramChip(PSRAM_SPI_PIN_S1);
-#if PSRAM_TWO_CHIPS || PSRAM_THREE_CHIPS || PSRAM_FOUR_CHIPS
     gpio_set_dir(PSRAM_SPI_PIN_S2, GPIO_OUT);
     deSelectPsramChip(PSRAM_SPI_PIN_S2);
-#if PSRAM_THREE_CHIPS || PSRAM_FOUR_CHIPS
-    gpio_set_dir(PSRAM_SPI_PIN_S3, GPIO_OUT);
-    deSelectPsramChip(PSRAM_SPI_PIN_S3);
-#if PSRAM_FOUR_CHIPS
-    gpio_set_dir(PSRAM_SPI_PIN_S4, GPIO_OUT);
-    deSelectPsramChip(PSRAM_SPI_PIN_S4);
-#endif
-#endif
-#endif
 
 #if PSRAM_HARDWARE_SPI
     uint baud = spi_init(PSRAM_SPI_INST, 1000 * 1000 * PSRAM_SPI_SPEED);
@@ -135,15 +122,8 @@ int initPSRAM()
 #endif
 
     gpio_set_slew_rate(PSRAM_SPI_PIN_S1, GPIO_SLEW_RATE_FAST);
-#if PSRAM_TWO_CHIPS || PSRAM_THREE_CHIPS || PSRAM_FOUR_CHIPS
     gpio_set_slew_rate(PSRAM_SPI_PIN_S2, GPIO_SLEW_RATE_FAST);
-#if PSRAM_THREE_CHIPS || PSRAM_FOUR_CHIPS
-    gpio_set_slew_rate(PSRAM_SPI_PIN_S3, GPIO_SLEW_RATE_FAST);
-#if PSRAM_FOUR_CHIPS
-    gpio_set_slew_rate(PSRAM_SPI_PIN_S4, GPIO_SLEW_RATE_FAST);
-#endif
-#endif
-#endif
+
     gpio_set_slew_rate(PSRAM_SPI_PIN_TX, GPIO_SLEW_RATE_FAST);
     gpio_set_slew_rate(PSRAM_SPI_PIN_RX, GPIO_SLEW_RATE_FAST);
     gpio_set_slew_rate(PSRAM_SPI_PIN_CK, GPIO_SLEW_RATE_FAST);
@@ -151,37 +131,23 @@ int initPSRAM()
     sleep_ms(10);
 
     psramReset(PSRAM_SPI_PIN_S1);
-#if PSRAM_TWO_CHIPS || PSRAM_THREE_CHIPS || PSRAM_FOUR_CHIPS
-    psramReset(PSRAM_SPI_PIN_S2);
-#if PSRAM_THREE_CHIPS || PSRAM_FOUR_CHIPS
-    psramReset(PSRAM_SPI_PIN_S3);
-#if PSRAM_FOUR_CHIPS
-    psramReset(PSRAM_SPI_PIN_S4);
-#endif
-#endif
-#endif
-
     uint8_t chipId[6];
 
     psramReadID(PSRAM_SPI_PIN_S1, chipId);
     if (chipId[1] != PSRAM_KGD)
         return -1;
 
-#if PSRAM_TWO_CHIPS || PSRAM_THREE_CHIPS || PSRAM_FOUR_CHIPS
     psramReadID(PSRAM_SPI_PIN_S2, chipId);
     if (chipId[1] != PSRAM_KGD)
         return -2;
-#if PSRAM_THREE_CHIPS || PSRAM_FOUR_CHIPS
-    psramReadID(PSRAM_SPI_PIN_S3, chipId);
+
+    // cacheInit();
+
+    writePSRAM(0, 4, chipId);
+    readPSRAM(0, 4, chipId);
+    
     if (chipId[1] != PSRAM_KGD)
-        return -3;
-#if PSRAM_FOUR_CHIPS
-    psramReadID(PSRAM_SPI_PIN_S4, chipId);
-    if (chipId[1] != PSRAM_KGD)
-        return -4;
-#endif
-#endif
-#endif
+        return -7;
 
 #if PSRAM_HARDWARE_SPI
     baud = spi_set_baudrate(PSRAM_SPI_INST, 1000 * 1000 * PSRAM_SPI_SPEED);
@@ -189,6 +155,29 @@ int initPSRAM()
 #else
     return 1;
 #endif
+}
+
+void readPSRAM(uint32_t addr, size_t size, void *bufP) {
+    accessPSRAM(addr, size, false, bufP);
+    // if(size != 64)
+    //     cacheRead(addr, bufP, size);
+    // else {
+    //     cacheRead(addr, bufP, 32);
+    //     cacheRead(addr + 32, bufP + 32, 32);
+    // }
+
+    // cache_read(addr, bufP, size);
+}
+void writePSRAM(uint32_t addr, size_t size, void *bufP) {
+    accessPSRAM(addr, size, true, bufP);
+    // if(size != 64)
+    //     cacheWrite(addr, bufP, size);
+    // else {
+    //     cacheWrite(addr, bufP, 32);
+    //     cacheWrite(addr + 32, bufP + 32, 32);
+    // }
+
+    // cache_write(addr, bufP, size);
 }
 
 uint8_t cmdAddr[5];
@@ -207,24 +196,10 @@ void accessPSRAM(uint32_t addr, size_t size, bool write, void *bufP)
         cmdSize++;
     }
 
-#if PSRAM_TWO_CHIPS || PSRAM_THREE_CHIPS || PSRAM_FOUR_CHIPS
-    if (addr >= PSRAM_CHIP_SIZE && addr < PSRAM_CHIP_SIZE * 2) {
+    if (addr >= PSRAM_CHIP_SIZE) {
         ramchip = PSRAM_SPI_PIN_S2;
         addr -= PSRAM_CHIP_SIZE;
     }
-#if PSRAM_THREE_CHIPS || PSRAM_FOUR_CHIPS
-    else if (addr >= PSRAM_CHIP_SIZE * 2 && addr < PSRAM_CHIP_SIZE * 3) {
-        ramchip = PSRAM_SPI_PIN_S3;
-        addr -= PSRAM_CHIP_SIZE * 2;
-    }
-#if PSRAM_FOUR_CHIPS
-    else if (addr >= PSRAM_CHIP_SIZE * 3 && addr < PSRAM_CHIP_SIZE * 4) {
-        ramchip = PSRAM_SPI_PIN_S4;
-        addr -= PSRAM_CHIP_SIZE * 3;
-    }
-#endif
-#endif
-#endif
 
     cmdAddr[1] = (addr >> 16) & 0xff;
     cmdAddr[2] = (addr >> 8) & 0xff;

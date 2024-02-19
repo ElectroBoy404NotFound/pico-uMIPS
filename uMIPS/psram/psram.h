@@ -4,11 +4,9 @@
 #include "pico/stdlib.h"
 #include "../config/umips_config.h"
 
-#define OPTIMAL_RAM_WR_SZ 16
-#define OPTIMAL_RAM_RD_SZ 16
-
+void writePSRAM(uint32_t addr, size_t size, void *bufP);
+void readPSRAM(uint32_t addr, size_t size, void *bufP);
 void accessPSRAM(uint32_t addr, size_t size, bool write, void *bufP);
 int initPSRAM();
-void RAMGetStat(uint64_t* reads, uint64_t* writes);
 
 #endif

@@ -1,3 +1,4 @@
 #ignore build folder
 build/
 build2/
+*_test*

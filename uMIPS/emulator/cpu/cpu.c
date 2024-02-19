@@ -263,13 +263,6 @@ static struct {
 			Interrupt vector (offset 0x200) if the IV bit in the Cause register is one
 */
 
-
-static void cpuPrvIcacheFlushEntire(void);
-static void cpuPrvIcacheFlushPage(uint32_t va);
-
-
-
-
 static bool cpuPrvIrqsPending(void)
 {
 	return !!(((cpu.status & CP0_STATUS_IM_MASK) >> CP0_STATUS_IM_SHIFT) & ((cpu.cause & CP0_CAUSE_IP_MASK) >> CP0_CAUSE_IP_SHIFT));
@@ -577,11 +570,6 @@ static int_fast8_t cpuPrvTlbHashSearch(uint32_t pageVa)
 static void cpuPrvMaybeAsidChanded(uint32_t prevVal)
 {
 	(void)prevVal;
-	if ((prevVal ^ cpu.entryHi) & TLB_ENTRYHI_ASID_MASK) {
-		
-		//changed
-		cpuPrvIcacheFlushEntire();
-	}
 }
 
 static void cpuPrvTlbr(void)
@@ -597,7 +585,6 @@ static void cpuPrvTlbr(void)
 
 static void cpuPrvTlbWrite(uint8_t index)
 {
-//	cpuPrvIcacheFlushPage(cpu.tlb[index].va);
 		
 	cpuPrvTlbHashRemove(index);
 	
@@ -607,10 +594,6 @@ static void cpuPrvTlbWrite(uint8_t index)
 	cpu.tlb[index].flagsAsByte = (cpu.entryLo & TLB_ENTRYLO_FLAGS_MASK) >> TLB_ENTRYLO_FLAGS_SHIFT;
 	
 	cpuPrvTlbHashAdd(index);
-	
-	cpuPrvIcacheFlushEntire();
-	//XXX: flush old & new page should work, but does not. i am too lazy to track it down
-	//cpuPrvIcacheFlushPage(cpu.tlb[index].va);
 }
 
 static void cpuPrvTlbwi(void)
@@ -712,87 +695,6 @@ static bool cpuPrvMemTranslate(uint32_t *paP, uint32_t va, bool write)
 	
 	return false;
 }
-
-#define ICACHE_LINE_SZ	32	//in bytes
-#define ICACHE_NUM_SETS	32
-#define ICACHE_NUM_WAYS	2
-
-
-
-struct IcacheLine {
-	uint32_t addr;	//kept as LSRed by ICACHE_LINE_SIZE, so 0xfffffffe is a valid "empty "sentinel
-	uint8_t icache[ICACHE_LINE_SZ];
-} mIcache[ICACHE_NUM_SETS][ICACHE_NUM_WAYS];
-
-
-static void __attribute__((used)) cpuPrvIcacheFlushEntire(void)
-{
-	memset(mIcache, 0xff, sizeof(mIcache));
-}
-
-static void __attribute__((used)) cpuPrvIcacheFlushPage(uint32_t va)
-{
-	struct IcacheLine *line;
-	uint16_t i;
-		
-	line = mIcache[(va / ICACHE_LINE_SZ) % ICACHE_NUM_SETS];
-	
-	for (i = 0; i < ICACHE_NUM_WAYS; i++, line++) {
-		
-		if (line->addr == va / ICACHE_LINE_SZ)
-			line->addr = 0xffffffff;
-	}
-}
-
-static bool __attribute__((used)) cpuPrvInstrFetchCached(uint32_t *instrP)	//if false, do nothing, all has been handled
-{
-	uint32_t va = cpu.pc, pa;
-	struct IcacheLine *line;
-	uint16_t i, set;
-	static unsigned rng = 1;
-
-//pretty hard to do this, so let's not check
-//	if (va & 3) {
-//		
-//		cpuPrvTakeAddressError(va, false);
-//		return false;
-//	}
-	
-	set = (va / ICACHE_LINE_SZ) % ICACHE_NUM_SETS;
-	line = mIcache[set];
-	
-	for (i = 0; i < ICACHE_NUM_WAYS; i++, line++) {
-		
-		if (line->addr == va / ICACHE_LINE_SZ) {
-
-			goto hit;
-		}
-	}
-	
-	//miss
-	line = mIcache[set];
-	
-	rng *= 214013;
-	rng += 2531011;
-	line += rng % ICACHE_NUM_WAYS;
-		
-	if (!cpuPrvMemTranslate(&pa, va, false))
-		return false;
-	
-	pa /= ICACHE_LINE_SZ;
-	pa *= ICACHE_LINE_SZ;
-	
-	if (!memAccess(pa, ICACHE_LINE_SZ, false, line->icache)) {
-		cpuPrvTakeBusError(pa, true);
-		return false;
-	}
-	line->addr = va / ICACHE_LINE_SZ;
-	
-hit:
-	*instrP = *(uint32_t*)(&line->icache[(va % ICACHE_LINE_SZ)]);	//god, i hope gcc optimizes this wel...
-	return true;
-}
-
 static bool __attribute__((used)) cpuPrvInstrFetch(uint32_t *instrP)	//if false, do nothing, all has been handled
 {
 	uint32_t va = cpu.pc, pa;
@@ -829,10 +731,8 @@ static bool cpuPrvDataAccess(void* buf, uint32_t va, uint8_t sz, bool write)
 		static uint32_t lastWrite;
 	
 		if (write) {
-			
 			if (sz == 4)
 				lastWrite = *(uint32_t*)buf;
-			cpuPrvIcacheFlushEntire();
 		}
 		else {
 			switch (sz) {
@@ -984,7 +884,7 @@ void cpuCycle(uint32_t ramAmount)
 		return cpuPrvTakeIrq();
 	}
 	
-	if (!cpuPrvInstrFetchCached(&instr))
+	if (!cpuPrvInstrFetch(&instr))
 		return;
 		
 	if (report) {
@@ -1929,7 +1829,6 @@ void cpuInit(uint32_t ramAmount)
 #endif
 	cpu.pc = 0xBFC00000UL;	/* mips gets reset to this addr */
 	cpu.npc = cpu.pc + 4;
-	cpuPrvIcacheFlushEntire();
 	
 	//having these in a chain simplifies removal
 	for (i = 0; i < EMU_NUM_TLB_ENTRIES; i++) {
