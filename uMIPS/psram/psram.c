@@ -169,9 +169,9 @@ void readPSRAM(uint32_t addr, size_t size, void *bufP) {
 
     // cacheRead(addr, bufP, size);
 
-    cache_read(addr, bufP, size);
+    // cache_read(addr, bufP, size);
 
-    // cache_read_l2(addr, bufP, size);
+    cache_read_l2(addr, bufP, size);
 }
 void writePSRAM(uint32_t addr, size_t size, void *bufP) {
     // accessPSRAM(addr, size, true, bufP);
@@ -184,9 +184,9 @@ void writePSRAM(uint32_t addr, size_t size, void *bufP) {
 
     // cacheWrite(addr, bufP, size);
 
-    cache_write(addr, bufP, size);
+    // cache_write(addr, bufP, size);
 
-    // cache_write_l2(addr, bufP, size);
+    cache_write_l2(addr, bufP, size);
 }
 
 uint8_t cmdAddr[5];

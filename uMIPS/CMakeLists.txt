@@ -7,6 +7,7 @@ add_executable(pico-uMIPS
 	psram/icache.c
 	
 	console/console.c
+	console/usb_descriptors.c
 
 	config/sd_hw_config.c
 
@@ -32,7 +33,12 @@ target_link_libraries(pico-uMIPS
 	hardware_i2c
 	hardware_vreg
 	hardware_clocks
+	tinyusb_device 
+	tinyusb_board
 )
+
+target_include_directories(pico-uMIPS PUBLIC ${CMAKE_CURRENT_LIST_DIR}/console/tusb_inc )
+target_include_directories(pico-uMIPS PUBLIC ${PICO_SDK}/lib/tinyusb/hw)
 
 # pico_define_boot_stage2(slower_boot2 ${PICO_DEFAULT_BOOT_STAGE2_FILE})
 # target_compile_definitions(slower_boot2 PRIVATE PICO_FLASH_SPI_CLKDIV=4)

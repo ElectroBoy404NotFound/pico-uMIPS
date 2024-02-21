@@ -63,7 +63,7 @@ void prPutchar(char chr)
 void dz11charPut(uint8_t line, uint8_t chr)
 {		
 	if (line == 3) {
-        console_putc(chr);
+        console_putc_uart(chr);
 		/*	--	for benchmarking
 		static uint8_t state = 0;
 		
@@ -95,6 +95,8 @@ void dz11charPut(uint8_t line, uint8_t chr)
 		//*/
 	//	prPutchar(chr);
 	}
+
+	console_putc_cdc(line, chr);
 }
 
 
@@ -178,7 +180,7 @@ bool cpuExtHypercall(void)	//call type in $at, params in $a0..$a3, return in $v0
 		
 		case H_CONSOLE_WRITE:
 			chr = cpuGetRegExternal(MIPS_REG_A0);
-			console_putc(chr);
+			console_putc_uart(chr);
 			break;
 		
 		case H_STOR_GET_SZ:

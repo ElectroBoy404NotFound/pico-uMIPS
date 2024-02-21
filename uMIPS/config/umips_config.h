@@ -12,6 +12,13 @@
 
 #define FPU_SUPPORT_FULL
 
+// Enable UART console
+#define CONSOLE_UART 1
+
+// Enable USB CDC console
+#define CONSOLE_CDC 1
+
+
 /******************/
 /* UART config
 /******************/
@@ -31,7 +38,7 @@
 /******************/
 
 // Use hardware SPI for PSRSAM (bitbang otherwise)
-#define PSRAM_HARDWARE_SPI 0
+#define PSRAM_HARDWARE_SPI 1
 
 #if PSRAM_HARDWARE_SPI
 

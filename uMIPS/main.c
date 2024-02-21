@@ -84,6 +84,8 @@ int main()
     sleep_ms(50);
     console_init();
 
+    console_printf("\x1B[J");
+
     multicore_reset_core1();
     multicore_fifo_drain();
     multicore_launch_core1(core1_entry);
