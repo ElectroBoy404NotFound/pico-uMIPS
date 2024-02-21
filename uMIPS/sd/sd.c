@@ -9,7 +9,6 @@
 #include "../console/console.h"
 #include "hw_config.h"
 
-// FIL file;
 sd_card_t *p_sd;
 
 bool sdCardInit() {
