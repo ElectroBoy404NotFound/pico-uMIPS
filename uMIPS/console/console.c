@@ -13,30 +13,30 @@
 #include <string.h>
 
 #include "bsp/rp2040/board.h"
-#include "tusb.h"
-#include "tusb_config.h"
+// #include "tusb.h"
+// #include "tusb_config.h"
 
 queue_t ser_screen_queue;
-queue_t ser_screen_queuel1;
-queue_t ser_screen_queuel2;
-queue_t ser_screen_queuel3;
-queue_t ser_screen_queuel4;
+// queue_t ser_screen_queuel1;
+// queue_t ser_screen_queuel2;
+// queue_t ser_screen_queuel3;
+// queue_t ser_screen_queuel4;
 
 void console_init(void)
 {
-    board_init();
-    tud_init(BOARD_TUD_RHPORT);
+    // board_init();
+    // tud_init(BOARD_TUD_RHPORT);
     
     uart_init(UART_INSTANCE, UART_BAUD_RATE);
     gpio_set_function(UART_TX_PIN, GPIO_FUNC_UART);
     gpio_set_function(UART_RX_PIN, GPIO_FUNC_UART);
     queue_init(&ser_screen_queue, sizeof(char), IO_QUEUE_LEN);
-    queue_init(&ser_screen_queuel1, sizeof(char), IO_QUEUE_LEN);
-    queue_init(&ser_screen_queuel2, sizeof(char), IO_QUEUE_LEN);
-    queue_init(&ser_screen_queuel3, sizeof(char), IO_QUEUE_LEN);
-    queue_init(&ser_screen_queuel4, sizeof(char), IO_QUEUE_LEN);
+    // queue_init(&ser_screen_queuel1, sizeof(char), IO_QUEUE_LEN);
+    // queue_init(&ser_screen_queuel2, sizeof(char), IO_QUEUE_LEN);
+    // queue_init(&ser_screen_queuel3, sizeof(char), IO_QUEUE_LEN);
+    // queue_init(&ser_screen_queuel4, sizeof(char), IO_QUEUE_LEN);
 }
-
+bool shldpanic = false;
 void ser_console_task(void)
 {
     if (!queue_is_empty(&ser_screen_queue))
@@ -48,45 +48,49 @@ void ser_console_task(void)
         uart_putc_raw(UART_INSTANCE, c);
     }
 
-    uint8_t c;
+    if(queue_is_empty(&ser_screen_queue) && shldpanic)
+        while (true)
+            tight_loop_contents();
 
-    if (!queue_is_empty(&ser_screen_queuel1))
-    {
-        if (tud_cdc_n_connected(0)) {
-            queue_remove_blocking(&ser_screen_queuel1, &c);
-            if(c == '\n') tud_cdc_write_char('\r');
-            tud_cdc_n_write_char(0, c);
-        }
-    }
-    if (!queue_is_empty(&ser_screen_queuel2))
-    {
-        if (tud_cdc_n_connected(1)) {
-            queue_remove_blocking(&ser_screen_queuel2, &c);
-            if(c == '\n') tud_cdc_write_char('\r');
-            tud_cdc_n_write_char(1, c);
-        }
-    }
-    if (!queue_is_empty(&ser_screen_queuel3))
-    {
-        if (tud_cdc_n_connected(2)) {
-            queue_remove_blocking(&ser_screen_queuel3, &c);
-            if(c == '\n') tud_cdc_write_char('\r');
-            tud_cdc_n_write_char(2, c);
-        }
-    }
-    if (!queue_is_empty(&ser_screen_queuel4))
-    {
-        if (tud_cdc_n_connected(3)) {
-            queue_remove_blocking(&ser_screen_queuel4, &c);
-            if(c == '\n') tud_cdc_write_char('\r');
-            tud_cdc_n_write_char(3, c);
-        }
-    }
+    // uint8_t c;
 
-    tud_cdc_n_write_flush(0);
-    tud_cdc_n_write_flush(1);
-    tud_cdc_n_write_flush(2);
-    tud_cdc_n_write_flush(3);
+    // if (!queue_is_empty(&ser_screen_queuel1))
+    // {
+    //     if (tud_cdc_n_connected(0)) {
+    //         queue_remove_blocking(&ser_screen_queuel1, &c);
+    //         if(c == '\n') tud_cdc_write_char('\r');
+    //         tud_cdc_n_write_char(0, c);
+    //     }
+    // }
+    // if (!queue_is_empty(&ser_screen_queuel2))
+    // {
+    //     if (tud_cdc_n_connected(1)) {
+    //         queue_remove_blocking(&ser_screen_queuel2, &c);
+    //         if(c == '\n') tud_cdc_write_char('\r');
+    //         tud_cdc_n_write_char(1, c);
+    //     }
+    // }
+    // if (!queue_is_empty(&ser_screen_queuel3))
+    // {
+    //     if (tud_cdc_n_connected(2)) {
+    //         queue_remove_blocking(&ser_screen_queuel3, &c);
+    //         if(c == '\n') tud_cdc_write_char('\r');
+    //         tud_cdc_n_write_char(2, c);
+    //     }
+    // }
+    // if (!queue_is_empty(&ser_screen_queuel4))
+    // {
+    //     if (tud_cdc_n_connected(3)) {
+    //         queue_remove_blocking(&ser_screen_queuel4, &c);
+    //         if(c == '\n') tud_cdc_write_char('\r');
+    //         tud_cdc_n_write_char(3, c);
+    //     }
+    // }
+
+    // tud_cdc_n_write_flush(0);
+    // tud_cdc_n_write_flush(1);
+    // tud_cdc_n_write_flush(2);
+    // tud_cdc_n_write_flush(3);
 
     uint8_t uart_in_ch;
     if (uart_is_readable(UART_INSTANCE))
@@ -95,32 +99,32 @@ void ser_console_task(void)
         dz11charRx(3, (uint8_t)uart_in_ch);
     }
 
-    uint8_t buf[IO_QUEUE_LEN];
-    if(tud_cdc_n_available(0)) {
-        uint32_t count = tud_cdc_n_read(0, buf, sizeof(buf));
-        for(int i = 0; i < count; i++)
-            dz11charRx(1, (uint8_t)buf[i]);
-    }
-    if(tud_cdc_n_available(1)) {
-        uint32_t count = tud_cdc_n_read(1, buf, sizeof(buf));
-        for(int i = 0; i < count; i++)
-            dz11charRx(2, (uint8_t)buf[i]);
-    }
-    if(tud_cdc_n_available(2)) {
-        uint32_t count = tud_cdc_n_read(2, buf, sizeof(buf));
-        for(int i = 0; i < count; i++)
-            dz11charRx(3, (uint8_t)buf[i]);
-    }
-    if(tud_cdc_n_available(3)) {
-        uint32_t count = tud_cdc_n_read(3, buf, sizeof(buf));
-        for(int i = 0; i < count; i++)
-            dz11charRx(4, (uint8_t)buf[i]);
-    }
+    // uint8_t buf[IO_QUEUE_LEN];
+    // if(tud_cdc_n_available(0)) {
+    //     uint32_t count = tud_cdc_n_read(0, buf, sizeof(buf));
+    //     for(int i = 0; i < count; i++)
+    //         dz11charRx(1, (uint8_t)buf[i]);
+    // }
+    // if(tud_cdc_n_available(1)) {
+    //     uint32_t count = tud_cdc_n_read(1, buf, sizeof(buf));
+    //     for(int i = 0; i < count; i++)
+    //         dz11charRx(2, (uint8_t)buf[i]);
+    // }
+    // if(tud_cdc_n_available(2)) {
+    //     uint32_t count = tud_cdc_n_read(2, buf, sizeof(buf));
+    //     for(int i = 0; i < count; i++)
+    //         dz11charRx(3, (uint8_t)buf[i]);
+    // }
+    // if(tud_cdc_n_available(3)) {
+    //     uint32_t count = tud_cdc_n_read(3, buf, sizeof(buf));
+    //     for(int i = 0; i < count; i++)
+    //         dz11charRx(4, (uint8_t)buf[i]);
+    // }
 }
 
 void console_task(void)
 {
-    tud_task();
+    // tud_task();
     ser_console_task();
 }
 
@@ -157,25 +161,24 @@ void console_panic_uart(const char *format, ...)
     console_puts_uart(termPrintBuf);
     va_end(args);
 
-    while (true)
-        tight_loop_contents();
+    shldpanic = true;
 }
 
 void console_putc_cdc(uint8_t line, char c)
 {
-    switch(line) {
-    default:
-    case 3:
-        queue_try_add(&ser_screen_queuel3, &c);
-        break;
-    case 1:
-        queue_try_add(&ser_screen_queuel1, &c);
-        break;
-    case 2:
-        queue_try_add(&ser_screen_queuel2, &c);
-        break;
-    case 4:
-        queue_try_add(&ser_screen_queuel4, &c);
-        break;
-    }
+    // switch(line) {
+    // default:
+    // case 3:
+    //     queue_try_add(&ser_screen_queuel3, &c);
+    //     break;
+    // case 1:
+    //     queue_try_add(&ser_screen_queuel1, &c);
+    //     break;
+    // case 2:
+    //     queue_try_add(&ser_screen_queuel2, &c);
+    //     break;
+    // case 4:
+    //     queue_try_add(&ser_screen_queuel4, &c);
+    //     break;
+    // }
 }

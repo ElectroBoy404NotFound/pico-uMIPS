@@ -38,7 +38,7 @@
 /******************/
 
 // Use hardware SPI for PSRSAM (bitbang otherwise)
-#define PSRAM_HARDWARE_SPI 1
+#define PSRAM_HARDWARE_SPI 0
 
 #if PSRAM_HARDWARE_SPI
 
@@ -49,13 +49,14 @@
 
 #endif
 // Pins for the PSRAM SPI interface
-#define PSRAM_SPI_PIN_CK 10
-#define PSRAM_SPI_PIN_TX 11
-#define PSRAM_SPI_PIN_RX 12
-
 // Select lines for the two PSRAM chips
-#define PSRAM_SPI_PIN_S1 21
-#define PSRAM_SPI_PIN_S2 22
+#define PSRAM_SPI_PIN_SS 21
+#define PSRAM_SPI_PIN_CK 10
+#define PSRAM_SPI_PIN_TX_S1 11
+#define PSRAM_SPI_PIN_RX_S1 12
+
+#define PSRAM_SPI_PIN_TX_S2 15
+#define PSRAM_SPI_PIN_RX_S2 13
 
 // PSRAM chip size (in kilobytes)
 #define PSRAM_CHIP_SIZE (8192 * 1024)

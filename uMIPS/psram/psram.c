@@ -6,157 +6,132 @@
 #include "psram.h"
 #include "cache.h"
 
-#if PSRAM_HARDWARE_SPI
-#include "hardware/spi.h"
-#endif
-
-#define PSRAM_CMD_RES_EN 0x66
-#define PSRAM_CMD_RESET 0x99
-#define PSRAM_CMD_READ_ID 0x9F
-#define PSRAM_CMD_READ 0x03
-#define PSRAM_CMD_READ_FAST 0x0B
-#define PSRAM_CMD_WRITE 0x02
+// #define PSRAM_CMD_RES_EN 0x66
+// #define PSRAM_CMD_RESET 0x99
+// #define PSRAM_CMD_READ_ID 0x9F
+// #define PSRAM_CMD_READ 0x03
+// #define PSRAM_CMD_READ_FAST 0x0B
+// #define PSRAM_CMD_WRITE 0x02
 #define PSRAM_KGD 0x5D
 
-#pragma GCC optimize ("Ofast")
-#define selectPsramChip(c) gpio_put(c, false)
-#define deSelectPsramChip(c) gpio_put(c, true)
+// #define selectPsramChip(c) gpio_put(c, false)
+// #define deSelectPsramChip(c) gpio_put(c, true)
 
-#if !PSRAM_HARDWARE_SPI
-#define spi_set_mosi(value) gpio_put(PSRAM_SPI_PIN_TX, value)
-#define spi_read_miso() gpio_get(PSRAM_SPI_PIN_RX)
-
-#pragma GCC optimize ("O2")
-
-void spi_tx_array(const uint8_t *data, size_t size)
+void spi_tx_array(const uint16_t *data, size_t size)
 {
     for (size_t i = 0; i < size; i++)
     {
         for (int j = 7; j >= 0; j--)
         {
-            spi_set_mosi((data[i] >> j) & 0x01);
+            gpio_put(PSRAM_SPI_PIN_TX_S1, (data[i] >> j) & 0x01);
+            gpio_put(PSRAM_SPI_PIN_TX_S2, (data[i] >> (j + 8)) & 0x01);
             gpio_put(PSRAM_SPI_PIN_CK, 1); 
             asm("nop");                    
             gpio_put(PSRAM_SPI_PIN_CK, 0);
         }
+
+        // console_printf_uart("TX: 0x%4x\r\n", data[i]);
     }
 }
 
-void spi_rx_array(uint8_t *data, size_t size)
+void spi_rx_array(uint16_t *data, size_t size)
 {
     for (size_t i = 0; i < size; i++)
     {
-        uint8_t byte = 0;
+        uint8_t byte1 = 0;
+        uint8_t byte2 = 0;
         for (int j = 7; j >= 0; j--)
         {
             gpio_put(PSRAM_SPI_PIN_CK, 1); 
             asm("nop");                    
             gpio_put(PSRAM_SPI_PIN_CK, 0);
-            byte |= (spi_read_miso() << j);
+            byte1 |= (gpio_get(PSRAM_SPI_PIN_RX_S1) << j);
+            byte2 |= (gpio_get(PSRAM_SPI_PIN_RX_S2) << j);
+            // console_printf_uart("RX S2: %d", gpio_get(PSRAM_SPI_PIN_RX_S2));
         }
-        data[i] = byte;
+        // data[i] = byte1;
+        // data[i+1] = byte2;
+        data[i] = byte1 | (byte2 << 8);
+        // console_printf_uart("RX: 0x%4x\r\n", data[i]);
+        // console_printf_uart("RX: 0x%2x\t", byte1);
+        // console_printf_uart("0x%2x\r\n", byte2);
+        // data[i] = byte1;
+        // data[i+1] = byte2;
     }
-
-#define PSRAM_SPI_WRITE(buf, sz) spi_tx_array(buf, sz)
-#define PSRAM_SPI_READ(buf, sz) spi_rx_array(buf, sz)
 }
 
-#else
-#define PSRAM_SPI_WRITE(buf, sz) spi_write_blocking(PSRAM_SPI_INST, buf, sz)
-#define PSRAM_SPI_READ(buf, sz) spi_read_blocking(PSRAM_SPI_INST, 0, buf, sz)
-#endif
+// void sendPsramCommand(uint16_t cmd) {
+//     spi_tx_array(&cmd, 1);
+// }
 
-#pragma GCC optimize ("Ofast")
+// void psramReset()
+// {
+//     selectPsramChip(PSRAM_SPI_PIN_SS);
+//     sendPsramCommand(PSRAM_CMD_RES_EN);
+//     sendPsramCommand(PSRAM_CMD_RESET);
+//     deSelectPsramChip(PSRAM_SPI_PIN_SS);
+//     sleep_ms(10);
+// }
 
+// void psramReadID(uint16_t *dst)
+// {
+//     selectPsramChip(PSRAM_SPI_PIN_SS);
+//     sendPsramCommand(PSRAM_CMD_READ_ID);
+//     spi_tx_array(dst, 3);
+//     spi_rx_array(dst, 6);
+//     deSelectPsramChip(PSRAM_SPI_PIN_SS);
+// }
 
-void sendPsramCommand(uint8_t cmd, uint chip)
-{
-    if (chip)
-        selectPsramChip(chip);
-    PSRAM_SPI_WRITE(&cmd, 1);
+// int initPSRAM()
+// {
+//     // spi_pulse_sck_asm();
+//     gpio_init(PSRAM_SPI_PIN_SS);
+//     gpio_init(PSRAM_SPI_PIN_CK);
 
-    if (chip)
-        deSelectPsramChip(chip);
-}
+//     gpio_init(PSRAM_SPI_PIN_TX_S1);
+//     gpio_init(PSRAM_SPI_PIN_RX_S1);
 
-void psramReset(uint chip)
-{
-    sendPsramCommand(PSRAM_CMD_RES_EN, chip);
-    sendPsramCommand(PSRAM_CMD_RESET, chip);
-    sleep_ms(10);
-}
+//     // gpio_init(PSRAM_SPI_PIN_TX_S2);
+//     // gpio_init(PSRAM_SPI_PIN_RX_S2);
 
-void psramReadID(uint chip, uint8_t *dst)
-{
-    selectPsramChip(chip);
-    sendPsramCommand(PSRAM_CMD_READ_ID, 0);
-    PSRAM_SPI_WRITE(dst, 3);
-    PSRAM_SPI_READ(dst, 6);
-    deSelectPsramChip(chip);
-}
+//     gpio_set_dir(PSRAM_SPI_PIN_SS, GPIO_OUT);
+//     deSelectPsramChip(PSRAM_SPI_PIN_SS);
 
-int initPSRAM()
-{
-    // spi_pulse_sck_asm();
-    gpio_init(PSRAM_SPI_PIN_S1);
-    gpio_init(PSRAM_SPI_PIN_S2);
+//     gpio_set_dir(PSRAM_SPI_PIN_TX_S1, GPIO_OUT);
+//     gpio_set_dir(PSRAM_SPI_PIN_RX_S1, GPIO_IN);
+//     // gpio_set_dir(PSRAM_SPI_PIN_TX_S2, GPIO_OUT);
+//     // gpio_set_dir(PSRAM_SPI_PIN_RX_S2, GPIO_IN);
+//     gpio_set_dir(PSRAM_SPI_PIN_CK, GPIO_OUT);
 
-    gpio_init(PSRAM_SPI_PIN_TX);
-    gpio_init(PSRAM_SPI_PIN_RX);
-    gpio_init(PSRAM_SPI_PIN_CK);
+//     gpio_set_slew_rate(PSRAM_SPI_PIN_SS, GPIO_SLEW_RATE_FAST);
 
-    gpio_set_dir(PSRAM_SPI_PIN_S1, GPIO_OUT);
-    deSelectPsramChip(PSRAM_SPI_PIN_S1);
-    gpio_set_dir(PSRAM_SPI_PIN_S2, GPIO_OUT);
-    deSelectPsramChip(PSRAM_SPI_PIN_S2);
+//     gpio_set_slew_rate(PSRAM_SPI_PIN_TX_S1, GPIO_SLEW_RATE_FAST);
+//     gpio_set_slew_rate(PSRAM_SPI_PIN_RX_S1, GPIO_SLEW_RATE_FAST);
+//     // gpio_set_slew_rate(PSRAM_SPI_PIN_TX_S2, GPIO_SLEW_RATE_FAST);
+//     // gpio_set_slew_rate(PSRAM_SPI_PIN_RX_S2, GPIO_SLEW_RATE_FAST);
+//     gpio_set_slew_rate(PSRAM_SPI_PIN_CK, GPIO_SLEW_RATE_FAST);
 
-#if PSRAM_HARDWARE_SPI
-    uint baud = spi_init(PSRAM_SPI_INST, 1000 * 1000 * PSRAM_SPI_SPEED);
-    gpio_set_function(PSRAM_SPI_PIN_TX, GPIO_FUNC_SPI);
-    gpio_set_function(PSRAM_SPI_PIN_RX, GPIO_FUNC_SPI);
-    gpio_set_function(PSRAM_SPI_PIN_CK, GPIO_FUNC_SPI);
+//     sleep_ms(10);
 
-#else
-    gpio_set_dir(PSRAM_SPI_PIN_TX, GPIO_OUT);
-    gpio_set_dir(PSRAM_SPI_PIN_RX, GPIO_IN);
-    gpio_set_dir(PSRAM_SPI_PIN_CK, GPIO_OUT);
-#endif
+//     psramReset();
 
-    gpio_set_slew_rate(PSRAM_SPI_PIN_S1, GPIO_SLEW_RATE_FAST);
-    gpio_set_slew_rate(PSRAM_SPI_PIN_S2, GPIO_SLEW_RATE_FAST);
+//     uint16_t chipId[6];
+//     psramReadID(chipId);
+//     if (chipId[1] >> 8 != PSRAM_KGD)
+//         return -13;
+//     if (chipId[1] & 0xff != PSRAM_KGD)
+//         return -23;
 
-    gpio_set_slew_rate(PSRAM_SPI_PIN_TX, GPIO_SLEW_RATE_FAST);
-    gpio_set_slew_rate(PSRAM_SPI_PIN_RX, GPIO_SLEW_RATE_FAST);
-    gpio_set_slew_rate(PSRAM_SPI_PIN_CK, GPIO_SLEW_RATE_FAST);
+//     // cacheInit();
 
-    sleep_ms(10);
-
-    psramReset(PSRAM_SPI_PIN_S1);
-    uint8_t chipId[6];
-
-    psramReadID(PSRAM_SPI_PIN_S1, chipId);
-    if (chipId[1] != PSRAM_KGD)
-        return -1;
-
-    psramReadID(PSRAM_SPI_PIN_S2, chipId);
-    if (chipId[1] != PSRAM_KGD)
-        return -2;
-
-    // cacheInit();
-
-    writePSRAM(0, 4, chipId);
-    readPSRAM(0, 4, chipId);
+//     writePSRAM(0, 4, chipId);
+//     readPSRAM(0, 4, chipId);
     
-    if (chipId[1] != PSRAM_KGD)
-        return -7;
+//     if (chipId[1] != PSRAM_KGD)
+//         return -73;
 
-#if PSRAM_HARDWARE_SPI
-    baud = spi_set_baudrate(PSRAM_SPI_INST, 1000 * 1000 * PSRAM_SPI_SPEED);
-    return baud;
-#else
-    return 1;
-#endif
-}
+//     return 13;
+// }
 
 void readPSRAM(uint32_t addr, size_t size, void *bufP) {
     // accessPSRAM(addr, size, false, bufP);
@@ -189,14 +164,162 @@ void writePSRAM(uint32_t addr, size_t size, void *bufP) {
     cache_write_l2(addr, bufP, size);
 }
 
+// uint8_t cmdAddr[5];
+
+// void accessPSRAM(uint32_t addr, size_t size, bool write, void *bufP)
+// {
+//     // uint8_t *b = (uint8_t *)bufP;
+//     // uint cmdSize = 4;
+
+//     // if (write)
+//     //     cmdAddr[0] = PSRAM_CMD_WRITE;
+//     // else
+//     // {
+//     //     cmdAddr[0] = PSRAM_CMD_READ_FAST;
+//     //     cmdSize++;
+//     // }
+
+//     // cmdAddr[1] = (addr >> 16) & 0xff;
+//     // cmdAddr[2] = (addr >> 8) & 0xff;
+//     // cmdAddr[3] = addr & 0xff;
+
+//     // selectPsramChip(ramchip);
+//     // spi_tx_array(cmdAddr, cmdSize);
+
+//     // if (write)
+//     //     spi_tx_array(b, size);
+//     // else
+//     //     spi_rx_array(b, size);
+
+//     // deSelectPsramChip(ramchip);
+// }
+
+#include <stdlib.h>
+
+#include "../config/umips_config.h"
+#include "psram.h"
+
+#define PSRAM_CMD_RES_EN 0x66
+#define PSRAM_CMD_RESET 0x99
+#define PSRAM_CMD_READ_ID 0x9F
+#define PSRAM_CMD_READ 0x03
+#define PSRAM_CMD_READ_FAST 0x0B
+#define PSRAM_CMD_WRITE 0x02
+#define PSRAM_KGD 0x5D
+
+#define selectPsramChip(c) gpio_put(c, false)
+#define deSelectPsramChip(c) gpio_put(c, true)
+
+#define spi_set_mosi(value) gpio_put(PSRAM_SPI_PIN_TX_S1, value)
+#define spi_read_miso() gpio_get(PSRAM_SPI_PIN_RX_S1)
+
+#define spi_pulse_sck()                \
+    {                                  \
+        asm("nop");                    \
+        gpio_put(PSRAM_SPI_PIN_CK, 1); \
+        asm("nop");                    \
+        gpio_put(PSRAM_SPI_PIN_CK, 0); \
+    }
+
+// void spi_tx_array(const uint8_t *data, size_t size)
+// {
+//     for (size_t i = 0; i < size; i++)
+//     {
+//         uint8_t byte = data[i];
+//         for (int j = 7; j >= 0; j--)
+//         {
+//             spi_set_mosi((byte >> j) & 0x01);
+//             spi_pulse_sck();
+//         }
+//     }
+// }
+
+// void spi_rx_array(uint8_t *data, size_t size)
+// {
+//     for (size_t i = 0; i < size; i++)
+//     {
+//         uint8_t byte = 0;
+//         for (int j = 7; j >= 0; j--)
+//         {
+//             spi_pulse_sck();
+//             byte |= (spi_read_miso() << j);
+//         }
+//         data[i] = byte;
+//     }
+// }
+
+void sendPsramCommand(uint8_t cmd, uint chip)
+{
+    if (chip)
+        selectPsramChip(chip);
+    uint16_t cmdx2 = (cmd << 8) | cmd;
+    spi_tx_array(&cmd, 1);
+
+    if (chip)
+        deSelectPsramChip(chip);
+}
+
+void psramReset(uint chip)
+{
+    sendPsramCommand(PSRAM_CMD_RES_EN, chip);
+    sendPsramCommand(PSRAM_CMD_RESET, chip);
+    sleep_ms(10);
+}
+
+void psramReadID(uint chip, uint16_t *dst)
+{
+    selectPsramChip(chip);
+    sendPsramCommand(PSRAM_CMD_READ_ID, 0);
+    spi_tx_array(dst, 3);
+    spi_rx_array(dst, 6);
+    deSelectPsramChip(chip);
+}
+
+int initPSRAM()
+{
+    gpio_init(PSRAM_SPI_PIN_SS);
+    gpio_init(PSRAM_SPI_PIN_RX_S1);
+    gpio_init(PSRAM_SPI_PIN_TX_S1);
+    gpio_init(PSRAM_SPI_PIN_RX_S2);
+    gpio_init(PSRAM_SPI_PIN_TX_S2);
+    gpio_init(PSRAM_SPI_PIN_CK);
+
+    gpio_set_dir(PSRAM_SPI_PIN_SS, GPIO_OUT);
+    gpio_set_dir(PSRAM_SPI_PIN_RX_S1, GPIO_IN);
+    gpio_set_dir(PSRAM_SPI_PIN_TX_S1, GPIO_OUT);
+    gpio_set_dir(PSRAM_SPI_PIN_RX_S2, GPIO_IN);
+    gpio_set_dir(PSRAM_SPI_PIN_TX_S2, GPIO_OUT);
+    gpio_set_dir(PSRAM_SPI_PIN_CK, GPIO_OUT);
+
+    deSelectPsramChip(PSRAM_SPI_PIN_SS);
+
+    gpio_put(PSRAM_SPI_PIN_TX_S1, 0);
+    gpio_put(PSRAM_SPI_PIN_TX_S2, 0);
+    gpio_put(PSRAM_SPI_PIN_CK, 0);
+
+    sleep_ms(10);
+
+    psramReset(PSRAM_SPI_PIN_SS);
+
+    uint16_t chipId[6];
+
+    psramReadID(PSRAM_SPI_PIN_SS, chipId);
+    if ((chipId[1] & 0xff) != PSRAM_KGD)
+        return -1;
+
+    if ((chipId[1] >> 8) != PSRAM_KGD)
+        return -2;
+
+    return 1;
+}
+
 uint8_t cmdAddr[5];
 
 void accessPSRAM(uint32_t addr, size_t size, bool write, void *bufP)
 {
     uint8_t *b = (uint8_t *)bufP;
     uint cmdSize = 4;
-    uint ramchip = PSRAM_SPI_PIN_S1;
-
+    
     if (write)
         cmdAddr[0] = PSRAM_CMD_WRITE;
     else
@@ -205,22 +328,31 @@ void accessPSRAM(uint32_t addr, size_t size, bool write, void *bufP)
         cmdSize++;
     }
 
-    if (addr >= PSRAM_CHIP_SIZE) {
-        ramchip = PSRAM_SPI_PIN_S2;
-        addr -= PSRAM_CHIP_SIZE;
-    }
-
     cmdAddr[1] = (addr >> 16) & 0xff;
     cmdAddr[2] = (addr >> 8) & 0xff;
     cmdAddr[3] = addr & 0xff;
 
-    selectPsramChip(ramchip);
-    PSRAM_SPI_WRITE(cmdAddr, cmdSize);
+    selectPsramChip(PSRAM_SPI_PIN_SS);
+    spi_tx_array(cmdAddr, cmdSize);
 
-    if (write)
-        PSRAM_SPI_WRITE(b, size);
-    else
-        PSRAM_SPI_READ(b, size);
+    if(size % 2) console_panic_uart("Ayo, PSRAM read/write size is not even!");
 
-    deSelectPsramChip(ramchip);
+    uint16_t tmpb[size/2];
+
+    if (write) {
+        for(int i = 0; i < size/2; i++) {
+            // b[i] = tmpb[i] & 0xff;
+            // b[i+1] = (tmpb[i] << 8) & 0xff;
+            tmpb[i] = b[i] | (b[i+1] << 8);
+        }
+        spi_tx_array(tmpb, size/2);
+    } else {
+        spi_rx_array(tmpb, size/2);
+        for(int i = 0; i < size/2; i++) {
+            b[i] = tmpb[i] & 0xff;
+            b[i+1] = (tmpb[i] << 8) & 0xff;
+        }
+    }
+
+    deSelectPsramChip(PSRAM_SPI_PIN_SS);
 }

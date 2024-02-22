@@ -84,7 +84,7 @@ int main()
     sleep_ms(50);
     console_init();
 
-    console_printf("\x1B[J");
+    // console_printf("\x1B[J");
 
     multicore_reset_core1();
     multicore_fifo_drain();
@@ -101,11 +101,11 @@ int main()
 void core1_entry()
 {
     int r = initPSRAM();
-    if (r < 1)
-        console_panic("Error initalizing PSRAM (%d)!\n\r", r);
+    if (r < 0)
+        console_panic_uart("Error initalizing PSRAM (%d)!\n\r", r);
 
-    console_printf("\x1b[32mPSRAM init OK!\n\r");
-    console_printf("\x1b[32mPSRAM Baud: %d\n\r", r);
+    console_printf_uart("\x1b[32mPSRAM init OK!\n\r");
+    console_printf_uart("\x1b[32mPSRAM Baud: %d\n\r", r);
 
     startEmu();
 }
