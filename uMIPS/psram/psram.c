@@ -253,7 +253,7 @@ void sendPsramCommand(uint8_t cmd, uint chip)
     if (chip)
         selectPsramChip(chip);
     uint16_t cmdx2 = (cmd << 8) | cmd;
-    spi_tx_array(&cmd, 1);
+    spi_tx_array(&cmdx2, 1);
 
     if (chip)
         deSelectPsramChip(chip);
@@ -313,7 +313,7 @@ int initPSRAM()
     return 1;
 }
 
-uint8_t cmdAddr[5];
+uint16_t cmdAddr[5];
 
 void accessPSRAM(uint32_t addr, size_t size, bool write, void *bufP)
 {
@@ -321,16 +321,16 @@ void accessPSRAM(uint32_t addr, size_t size, bool write, void *bufP)
     uint cmdSize = 4;
     
     if (write)
-        cmdAddr[0] = PSRAM_CMD_WRITE;
+        cmdAddr[0] = PSRAM_CMD_WRITE | PSRAM_CMD_WRITE << 8;
     else
     {
-        cmdAddr[0] = PSRAM_CMD_READ_FAST;
+        cmdAddr[0] = PSRAM_CMD_READ_FAST | PSRAM_CMD_READ_FAST << 8;
         cmdSize++;
     }
 
-    cmdAddr[1] = (addr >> 16) & 0xff;
-    cmdAddr[2] = (addr >> 8) & 0xff;
-    cmdAddr[3] = addr & 0xff;
+    cmdAddr[1] = (addr >> 16) & 0xff | ((addr >> 16) & 0xff) << 8;
+    cmdAddr[2] = (addr >> 8) & 0xff | ((addr >> 8) & 0xff) << 8;
+    cmdAddr[3] = addr & 0xff | (addr & 0xff) << 8;
 
     selectPsramChip(PSRAM_SPI_PIN_SS);
     spi_tx_array(cmdAddr, cmdSize);
