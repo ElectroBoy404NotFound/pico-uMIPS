@@ -440,7 +440,7 @@ uint32_t cpuGetRegExternal(uint8_t reg)
 	else if (reg == MIPS_EXT_REG_STATUS)
 		return cpu.status;
 	else
-		console_printf("Unknown reg read");
+		console_printf_uart("Unknown reg read");
 	
 	return 0;
 }
@@ -448,7 +448,7 @@ uint32_t cpuGetRegExternal(uint8_t reg)
 void cpuSetRegExternal(uint8_t reg, uint32_t val)
 {
 	if (!reg)
-		console_printf("Reg 0 external write");
+		console_printf_uart("Reg 0 external write");
 	else if (reg < MIPS_NUM_REGS)
 		cpu.regs[reg] = val;
 	else if (reg == MIPS_EXT_REG_PC)
@@ -464,7 +464,7 @@ void cpuSetRegExternal(uint8_t reg, uint32_t val)
 	else if (reg == MIPS_EXT_REG_STATUS)
 		cpu.status = val;
 	else
-		console_printf("Unknown reg set");
+		console_printf_uart("Unknown reg set");
 }
 
 static inline uint8_t cpuGetRegNumS(uint32_t instr)
@@ -1820,7 +1820,7 @@ void cpuCycle(uint32_t ramAmount)
 	return;
 
 invalid:
-	console_printf("unknown instruction 0x%08lX @ 0x%08lX (%u %u)\r\n", (unsigned long)instr, (unsigned long)cpu.pc, (unsigned)(instr >> 26), (unsigned)(instr & 0x3f));
+	console_printf_uart("unknown instruction 0x%08lX @ 0x%08lX (%u %u)\r\n", (unsigned long)instr, (unsigned long)cpu.pc, (unsigned)(instr >> 26), (unsigned)(instr & 0x3f));
 	
 invalid_nowarn:
 	return cpuPrvTakeReservedInstrExc();

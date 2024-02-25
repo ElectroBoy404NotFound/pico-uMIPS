@@ -24,7 +24,7 @@ void spi_tx_array(const uint16_t *data, size_t size)
         for (int j = 7; j >= 0; j--)
         {
             gpio_put(PSRAM_SPI_PIN_TX_S1, (data[i] >> j) & 0x01);
-            gpio_put(PSRAM_SPI_PIN_TX_S2, (data[i] >> (j + 8)) & 0x01);
+            gpio_put(PSRAM_SPI_PIN_TX_S2, (data[i] >> (j)) & 0x01);
             gpio_put(PSRAM_SPI_PIN_CK, 1); 
             asm("nop");                    
             gpio_put(PSRAM_SPI_PIN_CK, 0);
@@ -51,7 +51,7 @@ void spi_rx_array(uint16_t *data, size_t size)
         }
         // data[i] = byte1;
         // data[i+1] = byte2;
-        data[i] = byte1 | (byte2 << 8);
+        data[i] = byte2 << 8 | byte1;
         // console_printf_uart("RX: 0x%4x\r\n", data[i]);
         // console_printf_uart("RX: 0x%2x\t", byte1);
         // console_printf_uart("0x%2x\r\n", byte2);
@@ -310,6 +310,18 @@ int initPSRAM()
     if ((chipId[1] >> 8) != PSRAM_KGD)
         return -2;
 
+    uint8_t acsRAMTST[24] = {0xff, 0xaa, 0x55, 0xdd, 0x66, 0xff, 0xff, 0xaa, 0x55, 0xdd, 0x66, 0xff, 0xff, 0xaa, 0x55, 0xdd, 0x66, 0xff, 0xff, 0xaa, 0x55, 0xdd, 0x66, 0xff, };
+    uint8_t acsRAMTST_clone[24] = {0xff, 0xaa, 0x55, 0xdd, 0x66, 0xff, 0xff, 0xaa, 0x55, 0xdd, 0x66, 0xff, 0xff, 0xaa, 0x55, 0xdd, 0x66, 0xff, 0xff, 0xaa, 0x55, 0xdd, 0x66, 0xff, };
+
+    accessPSRAM(0, 24, true, acsRAMTST);
+    accessPSRAM(0, 24, false, acsRAMTST);
+
+    for(int i = 0; i < 24; i++)
+        if(acsRAMTST[i] != acsRAMTST_clone[i]) {
+            console_printf_uart("PSRAM test failed at position %d!\r\n", i);
+            return -(i * 10);
+        }
+
     return 1;
 }
 
@@ -340,17 +352,17 @@ void accessPSRAM(uint32_t addr, size_t size, bool write, void *bufP)
     uint16_t tmpb[size/2];
 
     if (write) {
-        for(int i = 0; i < size/2; i++) {
+        for(int i = 0; i <= size/2; i++) {
             // b[i] = tmpb[i] & 0xff;
             // b[i+1] = (tmpb[i] << 8) & 0xff;
-            tmpb[i] = b[i] | (b[i+1] << 8);
+            tmpb[i] = b[i*2] | (b[(i*2) +1] << 8);
         }
         spi_tx_array(tmpb, size/2);
     } else {
         spi_rx_array(tmpb, size/2);
-        for(int i = 0; i < size/2; i++) {
-            b[i] = tmpb[i] & 0xff;
-            b[i+1] = (tmpb[i] << 8) & 0xff;
+        for(int i = 0; i <= size/2; i++) {
+            b[i*2] = tmpb[i] & 0xff;
+            b[(i*2)+1] = (tmpb[i] << 8) & 0xff;
         }
     }
 

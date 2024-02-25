@@ -3,8 +3,8 @@
 
 #include "pico/util/queue.h"
 
-#define console_printf(e, ...) console_printf_uart(e)
-#define console_panic(e, ...) console_panic_uart(e)
+// #define console_printf(e, ...) console_printf_uart(e)
+// #define console_panic(e, ...) console_panic_uart(e)
 
 #define IO_QUEUE_LEN 31
 

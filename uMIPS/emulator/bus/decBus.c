@@ -37,7 +37,7 @@ static bool accessDecBusErrorReporter(uint32_t pa, uint8_t size, bool write, voi
 
 static void decBusPrvLeds(uint8_t val)
 {
-	console_printf("\r\nLEDS set to 0x%02x\r\n", (uint8_t)~val);
+	console_printf_uart("\r\nLEDS set to 0x%02x\r\n", (uint8_t)~val);
 }
 
 static bool accessDecCSR(uint32_t pa, uint8_t size, bool write, void* buf)

@@ -101,7 +101,7 @@ int main()
 void core1_entry()
 {
     int r = initPSRAM();
-    if (r < 0)
+    if (r < 1)
         console_panic_uart("Error initalizing PSRAM (%d)!\n\r", r);
 
     console_printf_uart("\x1b[32mPSRAM init OK!\n\r");

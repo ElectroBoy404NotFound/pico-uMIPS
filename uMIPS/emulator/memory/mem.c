@@ -84,7 +84,7 @@ bool memAccess(uint32_t addr, uint8_t size, bool write, void* buf){
 		if(gMem.regions[i].pa <= addr && gMem.regions[i].pa + gMem.regions[i].sz > addr)
 			return gMem.regions[i].aF(addr, size, write & 0x7F, buf);
 	
-	console_printf("\nMemory %s of %u bytes at physical addr 0x%08x fails\r\n", (write & 0x7F) ? "write" : "read", size, (unsigned)addr);
+	console_printf_uart("\nMemory %s of %u bytes at physical addr 0x%08x fails\r\n", (write & 0x7F) ? "write" : "read", size, (unsigned)addr);
 	
 	return false;
 }

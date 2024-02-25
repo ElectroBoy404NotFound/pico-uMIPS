@@ -142,9 +142,9 @@ static void dz11prvReset(void)
 static void dz11prvTx(uint8_t val)		//assumes it will be followed by recalc
 {
 	if (!gDZ11.enabled)
-		console_panic("DZ11: write while disabled\r\n");
+		console_panic_uart("DZ11: write while disabled\r\n");
 	if (!gDZ11.trdy)
-		console_panic("DZ11: write while no TRDY\r\n");
+		console_panic_uart("DZ11: write while no TRDY\r\n");
 	dz11charPut(gDZ11.txLine, val);	//our UARTs are instant and never busy
 	//loopback
 	if (gDZ11.maint)
@@ -160,7 +160,7 @@ static uint16_t dz11prvRx(void)	//assumes it will be followed by recalc
 	
 	if (!gDZ11.enabled) {
 		
-		console_printf("DZ11: read while fisabled");
+		console_printf_uart("DZ11: read while fisabled");
 		return 0;
 	}
 	

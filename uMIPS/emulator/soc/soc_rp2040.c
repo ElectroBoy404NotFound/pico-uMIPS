@@ -105,7 +105,7 @@ static bool massStorageAccess(uint8_t op, uint32_t sector, void *buf)
     switch (op) {
         case MASS_STORE_OP_GET_SZ:
             *(uint32_t*)buf = sdNoSectors();
-			// console_printf("\33[33mNumber of sectors requested. Assuming each sector is 512 bytes and file can go to 8GB.\33[m\n");
+			// console_printf_uart("\33[33mNumber of sectors requested. Assuming each sector is 512 bytes and file can go to 8GB.\33[m\n");
             return true;
         
         case MASS_STORE_OP_READ:
@@ -197,7 +197,7 @@ bool cpuExtHypercall(void)	//call type in $at, params in $a0..$a3, return in $v0
 				writePSRAM(pa + ofst, 64, mDiskBuf + ofst);
 			cpuSetRegExternal(MIPS_REG_V0, ret);
 			if (!ret) {
-				console_panic(" rd_block(%u, 0x%08x) -> %d\n", blk, pa, ret);
+				console_panic_uart(" rd_block(%u, 0x%08x) -> %d\n", blk, pa, ret);
 			}
 			break;
 		
@@ -209,16 +209,16 @@ bool cpuExtHypercall(void)	//call type in $at, params in $a0..$a3, return in $v0
 			ret = massStorageAccess(MASS_STORE_OP_WRITE, blk, mDiskBuf);
 			cpuSetRegExternal(MIPS_REG_V0, ret);
 			if (!ret) {
-				console_panic(" wr_block(%u, 0x%08x) -> %d\n", blk, pa, ret);
+				console_panic_uart(" wr_block(%u, 0x%08x) -> %d\n", blk, pa, ret);
 			}
 			break;
 		
 		case H_TERM:
-			console_panic("termination requested\n");
+			console_panic_uart("termination requested\n");
 		    break;
 
 		default:
-			console_printf("hypercall %u @ 0x%08x\n", hyperNum, cpuGetRegExternal(MIPS_EXT_REG_PC));
+			console_printf_uart("hypercall %u @ 0x%08x\n", hyperNum, cpuGetRegExternal(MIPS_EXT_REG_PC));
 			return false;
 	}
 	return true;
@@ -228,26 +228,26 @@ void startEmu(void)
 {
 	uint32_t ramAmt = EMULATOR_RAM_MB * 1024 * 1024;
 	
-	console_printf("\33[m");
+	console_printf_uart("\33[m");
 
     if (!memRegionAdd(EMU_RAM_BASE, ramAmt, accessRam))
-        console_panic("failed to init %s\n", "RAM");
+        console_panic_uart("failed to init %s\n", "RAM");
     if (!memRegionAdd(EMU_ROM_BASE & 0x1FFFFFFFUL, sizeof(gRom), accessRom))
-        console_panic("failed to init %s\n", "ROM");
+        console_panic_uart("failed to init %s\n", "ROM");
     if (!decBusInit())
-        console_panic("failed to init %s\n", "DEC BUS");
+        console_panic_uart("failed to init %s\n", "DEC BUS");
     if (!dz11init())
-        console_panic("failed to init %s\n", "DZ11");
+        console_panic_uart("failed to init %s\n", "DZ11");
     if (!ds1287init())
-        console_panic("failed to init %s\n", "DS1287");
+        console_panic_uart("failed to init %s\n", "DS1287");
     if(!sdCardInit())
-        console_panic("failed to init SD card\n");
+        console_panic_uart("failed to init SD card\n");
 
-    console_printf("uMIPS v2.2.0 (BL ver ");
-    console_printf("%d", *(volatile uint8_t*)8 - 0x10);
-    console_printf(")\r\nwill run with ");
-	console_printf("2");
-	console_printf(" PSRAM Chips");
+    console_printf_uart("uMIPS v2.2.0 (BL ver ");
+    console_printf_uart("%d", *(volatile uint8_t*)8 - 0x10);
+    console_printf_uart(")\r\nwill run with ");
+	console_printf_uart("2");
+	console_printf_uart(" PSRAM Chips");
     
     cpuInit(ramAmt);
 
@@ -256,7 +256,7 @@ void startEmu(void)
         cpuCycle(ramAmt);
     }
 
-    console_printf("CPU exited!");
+    console_printf_uart("CPU exited!");
 
     while(1);
 }

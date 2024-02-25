@@ -52,11 +52,11 @@
 // Select lines for the two PSRAM chips
 #define PSRAM_SPI_PIN_SS 21
 #define PSRAM_SPI_PIN_CK 10
-#define PSRAM_SPI_PIN_TX_S1 11
-#define PSRAM_SPI_PIN_RX_S1 12
+#define PSRAM_SPI_PIN_TX_S1 15
+#define PSRAM_SPI_PIN_RX_S1 13
 
-#define PSRAM_SPI_PIN_TX_S2 15
-#define PSRAM_SPI_PIN_RX_S2 13
+#define PSRAM_SPI_PIN_TX_S2 11
+#define PSRAM_SPI_PIN_RX_S2 12
 
 // PSRAM chip size (in kilobytes)
 #define PSRAM_CHIP_SIZE (8192 * 1024)
